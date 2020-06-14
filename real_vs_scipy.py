@@ -21,6 +21,7 @@ data_postlock = get_data_dict(area=area, data_dict=countries_dict_postlock, time
 recovered_prelock = np.array([traj[2] for traj in list(data_prelock.values())])
 recovered_postlock = np.array([traj[2] for traj in list(data_postlock.values())])
 
+# Passing from active cases to cumulative cases and increase the total number of confirmed cases
 infected_prelock = (np.array(
     [traj[1] for traj in list(data_prelock.values())]) + recovered_prelock) * multiplication_factor
 infected_postlock = (np.array(
@@ -47,7 +48,6 @@ if scaled:
     N = 1
 else:
     N = selected_countries_populations[area]
-
 s_0 = N - (i_0 + r_0)
 
 # Solve the equation using Scipy
