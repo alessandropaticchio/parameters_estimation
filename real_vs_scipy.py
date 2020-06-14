@@ -40,7 +40,7 @@ i_0 = infected_prelock[0]
 r_0 = recovered_prelock[0]
 
 # N = S + I + R
-N = 60000000
+N = 1
 s_0 = N - (i_0 + r_0)
 
 # Solve the equation using Scipy
