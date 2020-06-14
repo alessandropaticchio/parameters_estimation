@@ -80,7 +80,7 @@ def generate_grid(t_0, t_final, size):
     return grid
 
 
-def get_data_dict(area, data_dict, time_unit, skip_every=None, cut_off=1e-3, return_new_cases=False):
+def get_data_dict(area, data_dict, time_unit, populations, scaled=True, skip_every=None, cut_off=1e-3, return_new_cases=False):
     """
     :param area: name of the area where I want to extrapolate the data
     :param data_dict: dictionary that contains the data for a given area
@@ -106,6 +106,11 @@ def get_data_dict(area, data_dict, time_unit, skip_every=None, cut_off=1e-3, ret
     area_infected = data_dict[area][0][d:]
     area_removed = data_dict[area][1][d:]
     area_new_cases = data_dict[area][2][d:]
+
+    # Rescale infected and removed between 0 and 1
+    if scaled:
+        area_infected = np.array(area_infected) / populations[area]
+        area_removed = np.array(area_infected) / populations[area]
 
     times = []
 

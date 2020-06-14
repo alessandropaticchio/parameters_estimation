@@ -90,7 +90,7 @@ if __name__ == '__main__':
         time_unit = 0.25
         area = 'US'
         exact_points = get_data_dict(area, data_dict=countries_dict_prelock, time_unit=time_unit, skip_every=0,
-                                     cut_off=1.5e-3)
+                                     cut_off=1.5e-3, populations=selected_countries_populations)
 
         # If I'm fitting real data, I only fit Infected.
         # I also know the initial condition of I, so I can force it.

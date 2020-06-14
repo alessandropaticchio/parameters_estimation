@@ -136,10 +136,6 @@ for c in selected_countries:
 
     removed = recovered + deaths
 
-    # Rescale between 0 and 1
-    if c in selected_countries_populations.keys():
-        infected = infected / selected_countries_populations[c]
-        removed = removed / selected_countries_populations[c]
 
     countries_dict_prelock[c] = [infected, removed, new_cases]
 
@@ -152,8 +148,5 @@ for c in selected_countries:
 
     removed = recovered + deaths
 
-    if c in selected_countries_populations.keys():
-        infected = infected / selected_countries_populations[c]
-        removed = removed / selected_countries_populations[c]
 
     countries_dict_postlock[c] = [infected, removed, new_cases]

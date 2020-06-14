@@ -89,10 +89,10 @@ if __name__ == '__main__':
         cut_off = 1.5e-3
         # Real data prelockdown
         data_prelock = get_data_dict(area, data_dict=countries_dict_prelock, time_unit=time_unit,
-                                     skip_every=1, cut_off=cut_off)
+                                     skip_every=1, cut_off=cut_off, populations=selected_countries_populations)
         # Real data postlockdown
         data_postlock = get_data_dict(area, data_dict=countries_dict_postlock, time_unit=time_unit,
-                                      skip_every=1, cut_off=0.)
+                                      skip_every=1, cut_off=0., populations=selected_countries_populations)
         susceptible_weight = 0.
         recovered_weight = 0.
         force_init = True
