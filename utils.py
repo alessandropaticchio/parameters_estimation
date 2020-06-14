@@ -116,7 +116,10 @@ def get_data_dict(area, data_dict, time_unit, populations, scaled=True, skip_eve
 
     for i in range(len(area_infected)):
         times.append(i * time_unit)
-        traj[i * time_unit] = [1 - (area_infected[i] + area_removed[i]), area_infected[i], area_removed[i]]
+        if scaled:
+            traj[i * time_unit] = [1 - (area_infected[i] + area_removed[i]), area_infected[i], area_removed[i]]
+        else:
+            traj[i * time_unit] = [populations[area] - (area_infected[i] + area_removed[i]), area_infected[i], area_removed[i]]
 
     # If I don't want to select contiguous day, I will get just a subset
     if skip_every:

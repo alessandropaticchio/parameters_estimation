@@ -7,13 +7,14 @@ from real_data_countries import countries_dict_prelock, countries_dict_postlock,
 
 t_final = 20
 time_unit = 0.25
-area = 'Switzerland'
+area = 'Italy'
 scaled = False
 
 multiplication_factor = 10
 
+# Both data will have the shape of a multidimensional array [S(t), I(t), R(t)]
 data_prelock = get_data_dict(area=area, data_dict=countries_dict_prelock, time_unit=time_unit, skip_every=0,
-                             cut_off=1.5e-3, scaled=scaled, populations=selected_countries_populations)
+                             cut_off=20000, scaled=scaled, populations=selected_countries_populations)
 data_postlock = get_data_dict(area=area, data_dict=countries_dict_postlock, time_unit=time_unit, skip_every=1,
                               cut_off=0., scaled=scaled, populations=selected_countries_populations)
 
@@ -34,8 +35,8 @@ infected_postlock = infected_postlock - recovered_postlock
 x_postlock = np.array(list(data_postlock.keys())) + list(data_prelock.keys())[-1] + time_unit
 
 # Scipy solver solution
-beta = 3.8
-gamma = 3.5
+beta = 1.8
+gamma = 1.5
 
 # Fix the initial conditions as the first element of the infected and recovered data
 i_0 = infected_prelock[0]
