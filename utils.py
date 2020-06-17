@@ -80,7 +80,7 @@ def generate_grid(t_0, t_final, size):
     return grid
 
 
-def get_data_dict(area, data_dict, time_unit, populations, scaled=True, skip_every=None, cut_off=1e-3, return_new_cases=False):
+def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=True, skip_every=None, cut_off=1e-3, return_new_cases=False):
     """
     :param area: name of the area where I want to extrapolate the data
     :param data_dict: dictionary that contains the data for a given area
@@ -91,15 +91,22 @@ def get_data_dict(area, data_dict, time_unit, populations, scaled=True, skip_eve
     :return: if return_new_cases is False, it returns a dictionary mapping t to [s(t), i(t), r(t)]
     """
 
+    if area in rescaling.keys():
+        population = populations[area] / rescaling[area]
+    else:
+        population = populations[area]
+
     # A dictionary that will collect the data as
     # t : [s(t), i(t), r(t)]
     traj = {}
 
     # Select only the days whose infected go over the minimum cut off
+    if scaled:
+        for_cut_off_checking = np.array(data_dict[area][0]) / population
     if cut_off == 0:
         d = 0
     else:
-        for d, i in enumerate(data_dict[area][0]):
+        for d, i in enumerate(for_cut_off_checking):
             if i > cut_off:
                 break
 
@@ -107,10 +114,12 @@ def get_data_dict(area, data_dict, time_unit, populations, scaled=True, skip_eve
     area_removed = data_dict[area][1][d:]
     area_new_cases = data_dict[area][2][d:]
 
+
+
     # Rescale infected and removed between 0 and 1
     if scaled:
-        area_infected = np.array(area_infected) / populations[area]
-        area_removed = np.array(area_infected) / populations[area]
+        area_infected = np.array(area_infected) / population
+        area_removed = np.array(area_removed) / population
 
     times = []
 
@@ -119,7 +128,7 @@ def get_data_dict(area, data_dict, time_unit, populations, scaled=True, skip_eve
         if scaled:
             traj[i * time_unit] = [1 - (area_infected[i] + area_removed[i]), area_infected[i], area_removed[i]]
         else:
-            traj[i * time_unit] = [populations[area] - (area_infected[i] + area_removed[i]), area_infected[i], area_removed[i]]
+            traj[i * time_unit] = [population - (area_infected[i] + area_removed[i]), area_infected[i], area_removed[i]]
 
     # If I don't want to select contiguous day, I will get just a subset
     if skip_every:

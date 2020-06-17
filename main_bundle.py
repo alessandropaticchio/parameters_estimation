@@ -19,10 +19,10 @@ if __name__ == '__main__':
     t_final = 20
 
     # The intervals in which the equation parameters and the initial conditions should vary
-    betas = [3.1, 4.]
-    gammas = [2., 2.5]
-    i_0_set = [0.1, 0.3]
-    r_0_set = [0.1, 0.3]
+    i_0_set = [0.05, 0.15]
+    r_0_set = [0.01, 0.03]
+    betas = [0.45, 0.60]
+    gammas = [0.05, 0.15]
 
     # Model parameters
     initial_conditions_set = []
@@ -91,10 +91,10 @@ if __name__ == '__main__':
 
 
     # Equation parameters
-    beta = 6.15
-    gamma = 6.14
-    i_0 = 0.001509
-    r_0 = 0.0000728
+    beta = 0.55
+    gamma = 0.1
+    i_0 = 0.1
+    r_0 = 0.03
     s_0 = 1 - (i_0 + r_0)
 
     # Scipy solver solution
@@ -110,9 +110,9 @@ if __name__ == '__main__':
     plt.plot(range(len(s_p)), s_p, label='Susceptible - Scipy', linestyle='--', color=blue, linewidth=1.)
     plt.plot(range(len(i_p)), i_p, label='Infected - Scipy', linestyle='--', color=red, linewidth=1.)
     plt.plot(range(len(r_p)), r_p, label='Recovered - Scipy', linestyle='--', color=green, linewidth=1.)
-    plt.plot(range(len(s_hat)), s_hat, label='Susceptible', linestyle='--', color=blue, linewidth=1.)
-    plt.plot(range(len(i_hat)), i_hat, label='Infected', linestyle='--', color=red, linewidth=1.)
-    plt.plot(range(len(r_hat)), r_hat, label='Recovered', linestyle='--', color=green, linewidth=1.)
+    plt.plot(range(len(s_hat)), s_hat, label='Susceptible', linestyle='-', color=blue, linewidth=1.)
+    plt.plot(range(len(i_hat)), i_hat, label='Infected', linestyle='-', color=red, linewidth=1.)
+    plt.plot(range(len(r_hat)), r_hat, label='Recovered', linestyle='-', color=green, linewidth=1.)
     plt.title('Solving SIR model with Beta = {} | Gamma = {}\n'
               'Starting conditions: S0 = {:.4f} | I0 = {:.4f} | R0 = {:.4f} \n'
               'Model trained on bundle: I(0) in {} | R(0) in {} \n'

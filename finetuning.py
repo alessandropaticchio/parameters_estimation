@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 if __name__ == '__main__':
     # File to apply finetuning on a pretrained model
 
-    source_betas = [3.77, 3.87]
-    source_gammas = [3.65, 3.75]
-    source_i_0_set = [0.001, 0.003]
-    source_r_0_set = [0., 0.001]
+    source_i_0_set = [0.1, 0.2]
+    source_r_0_set = [0.1, 0.2]
+    source_betas = [0.6, 0.8]
+    source_gammas = [0.1, 0.2]
 
     initial_conditions_set = []
     t_0 = 0
@@ -58,10 +58,10 @@ if __name__ == '__main__':
         checkpoint = torch.load(ROOT_DIR + '/models/SIR_bundle_total/{}'.format(source_model_name))
 
     # Target model
-    target_betas = [3.70, 3.80]
-    target_gammas = [3.55, 3.65]
-    target_i_0_set = [0.001, 0.003]
-    target_r_0_set = [0., 0.001]
+    target_i_0_set = [0.05, 0.15]
+    target_r_0_set = [0.01, 0.03]
+    target_betas = [0.45, 0.60]
+    target_gammas = [0.05, 0.15]
 
     target_model_name = 'i_0={}_r_0={}_betas={}_gammas={}.pt'.format(target_i_0_set, target_r_0_set,
                                                                      target_betas,

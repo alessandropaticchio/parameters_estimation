@@ -1,7 +1,8 @@
 from models import SIRNetwork
 from data_fitting import fit
 from utils import get_syntethic_data, get_data_dict
-from real_data_countries import countries_dict_prelock, countries_dict_postlock, selected_countries_populations
+from real_data_countries import countries_dict_prelock, countries_dict_postlock, selected_countries_populations, \
+    selected_countries_rescaling
 from training import train_bundle
 from torch.utils.tensorboard import SummaryWriter
 from shutil import rmtree
@@ -23,10 +24,10 @@ if __name__ == '__main__':
     t_final = 20
 
     # The interval in which the equation parameters and the initial conditions should vary
-    betas = [1.5, 1.6]
-    gammas = [1.4, 1.5]
-    i_0_set = [0.001, 0.003]
-    r_0_set = [0., 0.001]
+    i_0_set = [0.05, 0.15]
+    r_0_set = [0.01, 0.03]
+    betas = [0.45, 0.60]
+    gammas = [0.05, 0.15]
     initial_conditions_set = []
     initial_conditions_set.append(t_0)
     initial_conditions_set.append(i_0_set)
@@ -84,18 +85,20 @@ if __name__ == '__main__':
     writer = SummaryWriter(writer_dir)
 
     if mode == 'real':
-        area = 'US'
+        area = 'Italy'
         time_unit = 0.25
-        cut_off = 1.5e-3
+        cut_off = 1e-1
         # Real data prelockdown
         data_prelock = get_data_dict(area, data_dict=countries_dict_prelock, time_unit=time_unit,
-                                     skip_every=1, cut_off=cut_off, populations=selected_countries_populations)
+                                     skip_every=1, cut_off=cut_off, populations=selected_countries_populations,
+                                     rescaling=selected_countries_rescaling)
         # Real data postlockdown
         data_postlock = get_data_dict(area, data_dict=countries_dict_postlock, time_unit=time_unit,
-                                      skip_every=1, cut_off=0., populations=selected_countries_populations)
-        susceptible_weight = 0.
-        recovered_weight = 0.
-        force_init = True
+                                      skip_every=1, cut_off=0., populations=selected_countries_populations,
+                                      rescaling=selected_countries_rescaling)
+        susceptible_weight = 1.
+        recovered_weight = 1.
+        force_init = False
     else:
         # Synthetic data
         exact_i_0 = 0.2
@@ -103,8 +106,8 @@ if __name__ == '__main__':
         exact_beta = 0.9
         exact_gamma = 0.2
         synthetic_data = get_syntethic_data(sir, t_final=t_final, i_0=exact_i_0, r_0=exact_r_0, exact_beta=exact_beta,
-                                          exact_gamma=exact_gamma,
-                                          size=10, selection_mode='equally_spaced')
+                                            exact_gamma=exact_gamma,
+                                            size=10, selection_mode='equally_spaced')
         susceptible_weight = 1.
         recovered_weight = 1.
         force_init = False
@@ -212,9 +215,13 @@ if __name__ == '__main__':
         x_valid_prelock = np.array(valid_times) / time_unit
 
         _, new_cases_prelock = get_data_dict(area, data_dict=countries_dict_prelock, time_unit=time_unit,
-                                             skip_every=1, cut_off=cut_off, return_new_cases=True)
+                                             skip_every=1, cut_off=cut_off, return_new_cases=True,
+                                             populations=selected_countries_populations,
+                                             rescaling=selected_countries_rescaling)
         _, new_cases_postlock = get_data_dict(area, data_dict=countries_dict_postlock, time_unit=time_unit,
-                                              skip_every=1, cut_off=0., return_new_cases=True)
+                                              skip_every=1, cut_off=0., return_new_cases=True,
+                                              populations=selected_countries_populations,
+                                              rescaling=selected_countries_rescaling)
         new_cases = np.concatenate((new_cases_prelock, new_cases_postlock))
 
         # Shift after the lockdown
