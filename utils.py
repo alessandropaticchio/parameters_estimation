@@ -101,8 +101,10 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
     traj = {}
 
     # Select only the days whose infected go over the minimum cut off
+    for_cut_off_checking = np.array(data_dict[area][0])
     if scaled:
-        for_cut_off_checking = np.array(data_dict[area][0]) / population
+         for_cut_off_checking = for_cut_off_checking / population
+
     if cut_off == 0:
         d = 0
     else:

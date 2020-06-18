@@ -113,7 +113,7 @@ selected_countries_populations = {'Italy': 60460000,
                                   'US': 328200000,
                                   'Sweden': 10230000}
 
-selected_countries_rescaling = {'Italy': 270}
+selected_countries_rescaling = {'Italy': 1}
 
 lockdown_ends = {'Italy': datetime.strptime('04/05/2020', '%d/%m/%Y'),
                  'Spain': datetime.strptime('04/05/2020', '%d/%m/%Y'),
@@ -138,7 +138,6 @@ for c in selected_countries:
 
     removed = recovered + deaths
 
-
     countries_dict_prelock[c] = [infected, removed, new_cases]
 
     # Sample data after lockdown
@@ -149,6 +148,5 @@ for c in selected_countries:
     new_cases = np.array(rows['New cases'])
 
     removed = recovered + deaths
-
 
     countries_dict_postlock[c] = [infected, removed, new_cases]
