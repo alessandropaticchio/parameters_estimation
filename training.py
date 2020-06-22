@@ -92,7 +92,7 @@ def train_bundle(model, initial_conditions_set, t_final, epochs, train_size, opt
         if epoch % 500 == 0 and epoch != 0:
             torch.save({'model_state_dict': model.state_dict(),
                         'optimizer_state_dict': optimizer.state_dict()},
-                       ROOT_DIR + '/models/SIR_bundle_total/{}'.format(model_name))
+                       ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
 
     final_time = time.time()
     run_time = final_time - start_time
