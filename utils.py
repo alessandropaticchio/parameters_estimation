@@ -27,25 +27,34 @@ def generate_dataloader(grid, t_0, t_final, batch_size, perturb=True, shuffle=Tr
     return t_dl
 
 
+
+### MARIOS: SEIR MODEL
+
 # Use below in the Scipy Solver
-def f(u, t, beta, gamma):
-    s, i, r = u  # unpack current values of u
-    N = s + i + r
-    derivs = [-(beta * i * s) / N, (beta * i * s) / N - gamma * i, gamma * i]  # list of dy/dt=f functions
+def f_seir(u, t, beta, gamma, lam):
+    s, e, i, r = u  # unpack current values of u
+    N = s + i + r + e
+    derivs = [-(beta * i * s) / N, (beta * i * s) / N - lam * e, lam * e - gamma * i,
+              gamma * i]  # list of dy/dt=f functions
+
     return derivs
 
 
 # Scipy Solver
-def SIR_solution(t, s_0, i_0, r_0, beta, gamma):
-    u_0 = [s_0, i_0, r_0]
+def SEIR_solution(t, s_0, e_0, i_0, r_0, beta, gamma, lam):
+    u_0 = [s_0, e_0, i_0, r_0]
 
     # Call the ODE solver
-    sol_sir = odeint(f, u_0, t, args=(beta, gamma))
+    sol_sir = odeint(f_seir, u_0, t, args=(beta, gamma, lam))
     s = sol_sir[:, 0]
-    i = sol_sir[:, 1]
-    r = sol_sir[:, 2]
+    e = sol_sir[:, 1]
+    i = sol_sir[:, 2]
+    r = sol_sir[:, 3]
+    return s, e, i, r
 
-    return s, i, r
+
+### END SEIR MODEL
+
 
 # Function to sample synthetic data from a generic solution of a model
 def get_syntethic_data(model, t_final, i_0, r_0, exact_beta, exact_gamma, size):
