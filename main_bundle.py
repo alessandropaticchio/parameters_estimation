@@ -12,7 +12,7 @@ from utils import SEIR_solution
 
 if __name__ == '__main__':
     # If resume_training is True, it will also load the optimizer and resume training
-    resume_training = False
+    resume_training = True
 
     # Equation parameters
     t_0 = 0
@@ -22,9 +22,9 @@ if __name__ == '__main__':
     e_0_set = [0.08, 0.1]
     i_0_set = [0.01, 0.2]
     r_0_set = [0., 0.001]
-    betas = [0.001, 0.004]
-    gammas = [0.06, 0.08]
-    lams = [0.04, 0.09]
+    betas = [0.004, 0.01]
+    gammas = [0.15, 0.4]
+    lams = [0.01, 0.03]
 
     # Model parameters
     initial_conditions_set = []
@@ -42,9 +42,9 @@ if __name__ == '__main__':
     # Init model
     seir = SIRNetwork(input=7, layers=4, hidden=50, output=4)
 
-    model_name = 'e_0={}_i_0={}_r_0={}_betas={}_gammas={}.pt'.format(e_0_set, i_0_set, r_0_set,
+    model_name = 'e_0={}_i_0={}_r_0={}_betas={}_gammas={}_lams={}.pt'.format(e_0_set, i_0_set, r_0_set,
                                                               betas,
-                                                              gammas)
+                                                              gammas, lams)
     try:
         # It tries to load the model, otherwise it trains it
         checkpoint = torch.load(
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         # Save the model
         torch.save({'model_state_dict': seir.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict()},
-                   ROOT_DIR + '/models/SIR_bundle_total/{}'.format(model_name))
+                   ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
 
         # Load the checkpoint
         checkpoint = torch.load(

@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
     if mode == 'real':
         area = 'Italy'
-        time_unit = 1
+        time_unit = 0.25
         cut_off = 1.5e-3
         multiplication_factor = 10
         # Real data prelockdown
