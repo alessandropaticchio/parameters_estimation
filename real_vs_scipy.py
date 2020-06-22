@@ -6,7 +6,7 @@ from real_data_countries import countries_dict_prelock, countries_dict_postlock,
 # Here I compare solution provided by Scipy with real data
 
 t_final = 20
-time_unit = 1
+time_unit = 0.25
 area = 'Italy'
 scaled = True
 
@@ -40,9 +40,9 @@ confirmed_postlock = infected_postlock + recovered_postlock
 x_postlock = np.array(list(data_postlock.keys())) + list(data_prelock.keys())[-1] + time_unit
 
 # Scipy solver solution
-beta = 0.002
-gamma = 0.075
-lam = 0.0175
+beta = 0.002 * 4
+gamma = 0.075 * 4
+lam = 0.0175 * 4
 
 # Fix the initial conditions as the first element of the infected and recovered data
 i_0 = infected_prelock[0]

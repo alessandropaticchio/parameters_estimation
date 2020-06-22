@@ -71,19 +71,13 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
                                                                    lam=lam,
                                                                    mode='bundle_total')
 
-            s_target = target[0]
-            e_target = target[1]
-            i_target = target[2]
-            r_target = target[3]
+            i_target = target[1]
+            r_target = target[2]
 
             if loss_mode == 'mse':
-                loss_s = (s_target - s_hat).pow(2)
-                loss_e = (e_target - e_hat).pow(2)
                 loss_i = (i_target - i_hat).pow(2)
                 loss_r = (r_target - r_hat).pow(2)
             elif loss_mode == 'cross_entropy':
-                loss_s = - s_target * torch.log(s_hat + 1e-10)
-                loss_e = - e_target * torch.log(e_hat + 1e-10)
                 loss_i = - i_target * torch.log(i_hat + 1e-10)
                 loss_r = - r_target * torch.log(r_hat + 1e-10)
             else:
@@ -96,11 +90,9 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
                 regularization = 0.
 
             # Weighting that regularizes how much we want to weight the Recovered/Susceptible curve
-            loss_s = loss_s * susceptible_weight
-            loss_e = loss_e * exposed_weight
             loss_r = loss_r * recovered_weight
 
-            loss += loss_s + loss_e + loss_i + loss_r + regularization
+            loss += loss_i + loss_r + regularization
 
         loss = loss / len(known_points.keys())
         losses.append(loss)

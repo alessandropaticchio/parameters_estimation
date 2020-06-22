@@ -96,6 +96,7 @@ class SIRNetwork(torch.nn.Module):
             # Network solutions
             s, e, i, r = self.parametric_solution(t, initial_conditions_set, beta=beta_t, gamma=gamma_t, lam=lam_t)
             s_hat.append(s.item())
+            e_hat.append(e.item())
             i_hat.append(i.item())
             r_hat.append(r.item())
 

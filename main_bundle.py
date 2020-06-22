@@ -12,7 +12,7 @@ from utils import SEIR_solution
 
 if __name__ == '__main__':
     # If resume_training is True, it will also load the optimizer and resume training
-    resume_training = True
+    resume_training = False
 
     # Equation parameters
     t_0 = 0
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     r_0_set = [0., 0.001]
     betas = [0.001, 0.004]
     gammas = [0.06, 0.08]
-    lams = [0.01, 0.03]
+    lams = [0.04, 0.09]
 
     # Model parameters
     initial_conditions_set = []
@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
         # Load the checkpoint
         checkpoint = torch.load(
-            ROOT_DIR + '/models/SIR_bundle_total/{}'.format(model_name))
+            ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
 
         import csv
         with open(ROOT_DIR + '/csv/train_losses_{}.csv'.format(model_name), 'w', newline='') as myfile:
@@ -86,7 +86,7 @@ if __name__ == '__main__':
                                                                num_batches=10, hack_trivial=hack_trivial,
                                                                train_size=train_size, optimizer=optimizer,
                                                                decay=decay,
-                                                               writer=writer, betas=betas, gammas=gammas)
+                                                               writer=writer, betas=betas, gammas=gammas, lams=lams)
         # Save the model
         torch.save({'model_state_dict': seir.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict()},
@@ -94,12 +94,12 @@ if __name__ == '__main__':
 
 
     # Equation parameters
-    beta = 0.5
-    gamma = 0.1
-    lam = 0.07
+    beta = 0.003
+    gamma = 0.07
+    lam = 0.02
     e_0 = 0.09
     i_0 = 0.015
-    r_0 = 0.002
+    r_0 = 0.0001
     s_0 = 1 - (e_0 + i_0 + r_0)
 
     # Scipy solver solution
@@ -112,11 +112,11 @@ if __name__ == '__main__':
 
     # Plot network solutions
     plt.figure(figsize=(8, 5))
-    plt.plot(range(len(s_p)), s_p, label='Susceptible - Scipy', linestyle='--', color=blue, linewidth=1.)
+    #plt.plot(range(len(s_p)), s_p, label='Susceptible - Scipy', linestyle='--', color=blue, linewidth=1.)
     plt.plot(range(len(e_p)), e_p, label='Exposed - Scipy', linestyle='--', color=orange, linewidth=1.)
     plt.plot(range(len(i_p)), i_p, label='Infected - Scipy', linestyle='--', color=red, linewidth=1.)
     plt.plot(range(len(r_p)), r_p, label='Recovered - Scipy', linestyle='--', color=green, linewidth=1.)
-    plt.plot(range(len(s_hat)), s_hat, label='Susceptible', linestyle='-', color=blue, linewidth=1.)
+    #plt.plot(range(len(s_hat)), s_hat, label='Susceptible', linestyle='-', color=blue, linewidth=1.)
     plt.plot(range(len(e_hat)), e_hat, label='Exposed', linestyle='-', color=orange, linewidth=1.)
     plt.plot(range(len(i_hat)), i_hat, label='Infected', linestyle='-', color=red, linewidth=1.)
     plt.plot(range(len(r_hat)), r_hat, label='Recovered', linestyle='-', color=green, linewidth=1.)

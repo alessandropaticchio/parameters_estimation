@@ -27,8 +27,8 @@ if __name__ == '__main__':
     e_0_set = [0.08, 0.1]
     i_0_set = [0.01, 0.2]
     r_0_set = [0., 0.001]
-    betas = [0.001, 0.004]
-    gammas = [0.06, 0.08]
+    betas = [0.004, 0.01]
+    gammas = [0.15, 0.4]
     lams = [0.01, 0.03]
 
     # Model parameters
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     lr = 8e-4
 
     # Init model
-    seir = SIRNetwork(input=6, layers=4, hidden=50, output=4)
+    seir = SIRNetwork(input=7, layers=4, hidden=50, output=4)
 
     model_name = 'e_0={}_i_0={}_r_0={}_betas={}_gammas={}.pt'.format(e_0_set, i_0_set, r_0_set,
                                                                      betas,
@@ -67,8 +67,8 @@ if __name__ == '__main__':
                                                                epochs=epochs,
                                                                num_batches=10, hack_trivial=hack_trivial,
                                                                train_size=train_size, optimizer=optimizer,
-                                                               decay=decay,
-                                                               writer=writer, betas=betas,
+                                                               decay=decay, model_name=model_name,
+                                                               writer=writer, betas=betas, lams=lams,
                                                                gammas=gammas)
         # Save the model
         torch.save({'model_state_dict': seir.state_dict(),
@@ -104,8 +104,8 @@ if __name__ == '__main__':
                                       skip_every=1, cut_off=0., populations=selected_countries_populations,
                                       multiplication_factor=multiplication_factor,
                                       rescaling=selected_countries_rescaling)
-        susceptible_weight = 1.
-        exposed_weight = 1.
+        susceptible_weight = 0.
+        exposed_weight = 0.
         recovered_weight = 1.
         force_init = False
     else:
@@ -151,19 +151,20 @@ if __name__ == '__main__':
     for i in range(n_trials):
         print('Fit no. {}\n'.format(i + 1))
         e_0, i_0, r_0, beta, gamma, lam, rnd_init, traj_mse = fit(seir,
-                                                             init_bundle=initial_conditions_set,
-                                                             betas=betas,
-                                                             gammas=gammas,
-                                                             steps=train_size, lr=1e-2,
-                                                             known_points=data_prelock,
-                                                             writer=writer,
-                                                             loss_mode=loss_mode,
-                                                             epochs=fit_epochs,
-                                                             verbose=True,
-                                                             susceptible_weight=susceptible_weight,
-                                                             exposed_weight=exposed_weight,
-                                                             recovered_weight=recovered_weight,
-                                                             force_init=force_init)
+                                                                  init_bundle=initial_conditions_set,
+                                                                  betas=betas,
+                                                                  gammas=gammas,
+                                                                  lams=lams,
+                                                                  steps=train_size, lr=1e-1,
+                                                                  known_points=data_prelock,
+                                                                  writer=writer,
+                                                                  loss_mode=loss_mode,
+                                                                  epochs=fit_epochs,
+                                                                  verbose=True,
+                                                                  susceptible_weight=susceptible_weight,
+                                                                  exposed_weight=exposed_weight,
+                                                                  recovered_weight=recovered_weight,
+                                                                  force_init=force_init)
         s_0 = 1 - (e_0 + i_0 + r_0)
 
         if traj_mse < min_loss:
@@ -181,24 +182,15 @@ if __name__ == '__main__':
         t_tensor.requires_grad = True
 
         s_optimal, e_optimal, i_optimal, r_optimal = seir.parametric_solution(t_tensor, optimal_initial_conditions,
-                                                                                beta=optimal_beta,
-                                                                                gamma=optimal_gamma,
-                                                                                lam=optimal_lam,
-                                                                                mode='bundle_total')
+                                                                              beta=optimal_beta,
+                                                                              gamma=optimal_gamma,
+                                                                              lam=optimal_lam,
+                                                                              mode='bundle_total')
 
-        optimal_de += sir_loss(t_tensor, s_optimal, e_optimal, i_optimal, r_optimal, optimal_beta, optimal_gamma, optimal_lam)
+        optimal_de += sir_loss(t_tensor, s_optimal, e_optimal, i_optimal, r_optimal, optimal_beta, optimal_gamma,
+                               optimal_lam)
         optimal_traj.append([s_optimal, i_optimal, r_optimal])
 
-    # Exact solution subset
-    exact_sub_traj = [data_prelock[t] for t in data_prelock.keys()]
-
-    optimal_mse = 0.
-    for idx, p in enumerate(exact_sub_traj):
-        exact_s, exact_e, exact_i, exact_r = p
-        optimal_mse += (exact_s - optimal_traj[idx][0]) ** 2 + (exact_e - optimal_traj[idx][1]) ** 2 + (exact_i - optimal_traj[idx][2]) ** 2 + (
-                exact_r - optimal_traj[idx][3]) ** 2
-
-    optimal_mse /= len(optimal_traj)
 
     # Generate points between 0 and t_final
     grid = torch.arange(0, t_final, out=torch.FloatTensor()).reshape(-1, 1)
@@ -209,8 +201,9 @@ if __name__ == '__main__':
     r_hat = []
     for i, t in enumerate(t_dl, 0):
         # Network solutions
-        s, e, i, r = seir.parametric_solution(t, optimal_initial_conditions, beta=optimal_beta, gamma=optimal_gamma, lam=optimal_lam,
-                                           mode='bundle_total')
+        s, e, i, r = seir.parametric_solution(t, optimal_initial_conditions, beta=optimal_beta, gamma=optimal_gamma,
+                                              lam=optimal_lam,
+                                              mode='bundle_total')
         s_hat.append(s.item())
         e_hat.append(e.item())
         i_hat.append(i.item())
@@ -293,11 +286,12 @@ if __name__ == '__main__':
         plt.bar(x_train_prelock, known_recovered_exact_prelock, label='Infected', color=green)
         plt.bar(x_train_postlock, known_recovered_exact_postlock, label='Post Lockdown', color='orange')
         plt.title('Comparison between real recovered and predicted recovered\n'
-                  'Optimal I(0) = {:.6f} | R(0) = {:.6f} \n Beta = {:.6f} | Gamma = {:.6f} \n'.format(
+                  'Optimal I(0) = {:.6f} | R(0) = {:.6f} \n Beta = {:.6f} | Gamma = {:.6f} | Lam = {:.6f} \n'.format(
             optimal_i_0.item(),
             optimal_r_0.item(),
             optimal_beta.item(),
-            optimal_gamma.item()))
+            optimal_gamma.item(),
+            optimal_lam.item()))
         plt.legend(loc='best')
         plt.xlabel('t (days)', fontsize=labelsize)
         plt.ylabel('R(t)', fontsize=labelsize)
