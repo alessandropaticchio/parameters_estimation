@@ -24,12 +24,17 @@ if __name__ == '__main__':
     t_final = 20
 
     # The interval in which the equation parameters and the initial conditions should vary
-    i_0_set = [0.05, 0.15]
-    r_0_set = [0.01, 0.03]
-    betas = [0.45, 0.60]
-    gammas = [0.05, 0.15]
+    e_0_set = [0.08, 0.1]
+    i_0_set = [0.01, 0.2]
+    r_0_set = [0., 0.001]
+    betas = [0.001, 0.004]
+    gammas = [0.06, 0.08]
+    lams = [0.01, 0.03]
+
+    # Model parameters
     initial_conditions_set = []
     initial_conditions_set.append(t_0)
+    initial_conditions_set.append(e_0_set)
     initial_conditions_set.append(i_0_set)
     initial_conditions_set.append(r_0_set)
 
@@ -44,38 +49,38 @@ if __name__ == '__main__':
     lr = 8e-4
 
     # Init model
-    sir = SIRNetwork(input=5, layers=4, hidden=50)
+    seir = SIRNetwork(input=6, layers=4, hidden=50, output=4)
 
-    model_name = 'i_0={}_r_0={}_betas={}_gammas={}.pt'.format(i_0_set, r_0_set,
-                                                              betas,
-                                                              gammas)
+    model_name = 'e_0={}_i_0={}_r_0={}_betas={}_gammas={}.pt'.format(e_0_set, i_0_set, r_0_set,
+                                                                     betas,
+                                                                     gammas)
 
     try:
         # It tries to load the model, otherwise it trains it
         checkpoint = torch.load(
-            ROOT_DIR + '/models/SIR_bundle_total/{}'.format(model_name))
+            ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
     except FileNotFoundError:
         # Train
-        optimizer = torch.optim.Adam(sir.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(seir.parameters(), lr=lr)
         writer = SummaryWriter('runs/{}'.format(model_name))
-        sir, train_losses, run_time, optimizer = train_bundle(sir, initial_conditions_set, t_final=t_final,
-                                                              epochs=epochs,
-                                                              num_batches=10, hack_trivial=hack_trivial,
-                                                              train_size=train_size, optimizer=optimizer,
-                                                              decay=decay,
-                                                              writer=writer, betas=betas,
-                                                              gammas=gammas)
+        seir, train_losses, run_time, optimizer = train_bundle(seir, initial_conditions_set, t_final=t_final,
+                                                               epochs=epochs,
+                                                               num_batches=10, hack_trivial=hack_trivial,
+                                                               train_size=train_size, optimizer=optimizer,
+                                                               decay=decay,
+                                                               writer=writer, betas=betas,
+                                                               gammas=gammas)
         # Save the model
-        torch.save({'model_state_dict': sir.state_dict(),
+        torch.save({'model_state_dict': seir.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict()},
-                   ROOT_DIR + '/models/SIR_bundle_total/{}'.format(model_name))
+                   ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
 
         # Load the checkpoint
         checkpoint = torch.load(
-            ROOT_DIR + '/models/SIR_bundle_total/{}'.format(model_name))
+            ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
 
     # Load the model
-    sir.load_state_dict(checkpoint['model_state_dict'])
+    seir.load_state_dict(checkpoint['model_state_dict'])
 
     writer_dir = 'runs/' + 'fitting_{}'.format(model_name)
 
@@ -86,28 +91,35 @@ if __name__ == '__main__':
 
     if mode == 'real':
         area = 'Italy'
-        time_unit = 0.25
-        cut_off = 1e-1
+        time_unit = 1
+        cut_off = 1.5e-3
+        multiplication_factor = 10
         # Real data prelockdown
         data_prelock = get_data_dict(area, data_dict=countries_dict_prelock, time_unit=time_unit,
                                      skip_every=1, cut_off=cut_off, populations=selected_countries_populations,
+                                     multiplication_factor=multiplication_factor,
                                      rescaling=selected_countries_rescaling)
         # Real data postlockdown
         data_postlock = get_data_dict(area, data_dict=countries_dict_postlock, time_unit=time_unit,
                                       skip_every=1, cut_off=0., populations=selected_countries_populations,
+                                      multiplication_factor=multiplication_factor,
                                       rescaling=selected_countries_rescaling)
         susceptible_weight = 1.
+        exposed_weight = 1.
         recovered_weight = 1.
         force_init = False
     else:
         # Synthetic data
+        exact_e_0 = 0.1
         exact_i_0 = 0.2
         exact_r_0 = 0.3
         exact_beta = 0.9
         exact_gamma = 0.2
-        synthetic_data = get_syntethic_data(sir, t_final=t_final, i_0=exact_i_0, r_0=exact_r_0, exact_beta=exact_beta,
+        synthetic_data = get_syntethic_data(seir, t_final=t_final, e_0=exact_e_0, i_0=exact_i_0, r_0=exact_r_0,
+                                            exact_beta=exact_beta,
                                             exact_gamma=exact_gamma,
                                             size=10, selection_mode='equally_spaced')
+        susceptible_weight = 1.
         susceptible_weight = 1.
         recovered_weight = 1.
         force_init = False
@@ -138,26 +150,27 @@ if __name__ == '__main__':
     # Fit n_trials time and take the best fitting
     for i in range(n_trials):
         print('Fit no. {}\n'.format(i + 1))
-        i_0, r_0, beta, gamma, rnd_init, traj_mse = fit(sir,
-                                                        init_bundle=initial_conditions_set,
-                                                        betas=betas,
-                                                        gammas=gammas,
-                                                        steps=train_size, lr=1e-2,
-                                                        known_points=data_prelock,
-                                                        writer=writer,
-                                                        loss_mode=loss_mode,
-                                                        epochs=fit_epochs,
-                                                        verbose=True,
-                                                        susceptible_weight=susceptible_weight,
-                                                        recovered_weight=recovered_weight,
-                                                        force_init=force_init)
-        s_0 = 1 - (i_0 + r_0)
+        e_0, i_0, r_0, beta, gamma, lam, rnd_init, traj_mse = fit(seir,
+                                                             init_bundle=initial_conditions_set,
+                                                             betas=betas,
+                                                             gammas=gammas,
+                                                             steps=train_size, lr=1e-2,
+                                                             known_points=data_prelock,
+                                                             writer=writer,
+                                                             loss_mode=loss_mode,
+                                                             epochs=fit_epochs,
+                                                             verbose=True,
+                                                             susceptible_weight=susceptible_weight,
+                                                             exposed_weight=exposed_weight,
+                                                             recovered_weight=recovered_weight,
+                                                             force_init=force_init)
+        s_0 = 1 - (e_0 + i_0 + r_0)
 
         if traj_mse < min_loss:
-            optimal_s_0, optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma = s_0, i_0, r_0, beta, gamma
+            optimal_s_0, optimal_e_0, optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma, optimal_lam = s_0, e_0, i_0, r_0, beta, gamma, lam
             min_loss = traj_mse
 
-    optimal_initial_conditions = [optimal_s_0, optimal_i_0, optimal_r_0]
+    optimal_initial_conditions = [optimal_s_0, optimal_e_0, optimal_i_0, optimal_r_0]
 
     # Let's save the predicted trajectories in the known points
     optimal_traj = []  # Solution of the network with the optimal found set of params
@@ -167,12 +180,13 @@ if __name__ == '__main__':
         t_tensor = torch.Tensor([t]).reshape(-1, 1)
         t_tensor.requires_grad = True
 
-        s_optimal, i_optimal, r_optimal = sir.parametric_solution(t_tensor, optimal_initial_conditions,
-                                                                  beta=optimal_beta,
-                                                                  gamma=optimal_gamma,
-                                                                  mode='bundle_total')
+        s_optimal, e_optimal, i_optimal, r_optimal = seir.parametric_solution(t_tensor, optimal_initial_conditions,
+                                                                                beta=optimal_beta,
+                                                                                gamma=optimal_gamma,
+                                                                                lam=optimal_lam,
+                                                                                mode='bundle_total')
 
-        optimal_de += sir_loss(t_tensor, s_optimal, i_optimal, r_optimal, optimal_beta, optimal_gamma)
+        optimal_de += sir_loss(t_tensor, s_optimal, e_optimal, i_optimal, r_optimal, optimal_beta, optimal_gamma, optimal_lam)
         optimal_traj.append([s_optimal, i_optimal, r_optimal])
 
     # Exact solution subset
@@ -180,9 +194,9 @@ if __name__ == '__main__':
 
     optimal_mse = 0.
     for idx, p in enumerate(exact_sub_traj):
-        exact_s, exact_i, exact_r = p
-        optimal_mse += (exact_s - optimal_traj[idx][0]) ** 2 + (exact_i - optimal_traj[idx][1]) ** 2 + (
-                exact_r - optimal_traj[idx][2]) ** 2
+        exact_s, exact_e, exact_i, exact_r = p
+        optimal_mse += (exact_s - optimal_traj[idx][0]) ** 2 + (exact_e - optimal_traj[idx][1]) ** 2 + (exact_i - optimal_traj[idx][2]) ** 2 + (
+                exact_r - optimal_traj[idx][3]) ** 2
 
     optimal_mse /= len(optimal_traj)
 
@@ -190,13 +204,15 @@ if __name__ == '__main__':
     grid = torch.arange(0, t_final, out=torch.FloatTensor()).reshape(-1, 1)
     t_dl = DataLoader(dataset=grid, batch_size=1, shuffle=False)
     s_hat = []
+    e_hat = []
     i_hat = []
     r_hat = []
     for i, t in enumerate(t_dl, 0):
         # Network solutions
-        s, i, r = sir.parametric_solution(t, optimal_initial_conditions, beta=optimal_beta, gamma=optimal_gamma,
-                                          mode='bundle_total')
+        s, e, i, r = seir.parametric_solution(t, optimal_initial_conditions, beta=optimal_beta, gamma=optimal_gamma, lam=optimal_lam,
+                                           mode='bundle_total')
         s_hat.append(s.item())
+        e_hat.append(e.item())
         i_hat.append(i.item())
         r_hat.append(r.item())
 
