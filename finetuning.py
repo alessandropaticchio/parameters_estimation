@@ -68,7 +68,7 @@ if __name__ == '__main__':
     target_r_0_set = [0., 0.001]
     target_betas = [0.004, 0.01]
     target_gammas = [0.15, 0.25]
-    target_lams = [0.01, 0.03]
+    target_lams = [0.05, 0.09]
 
     target_model_name = 'e_0={}_i_0={}_r_0={}_betas={}_gammas={}_lams={}.pt'.format(target_e_0_set, target_i_0_set,
                                                                                     target_r_0_set,

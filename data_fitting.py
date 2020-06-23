@@ -24,10 +24,11 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
     # if force_init == True fix the initial conditions as the ones given and find only the params
     if force_init:
         i_0 = known_points[0][1]
+        r_0 = known_points[0][2]
         e_0 = torch.Tensor([e_0]).reshape(-1, 1)
         i_0 = torch.Tensor([i_0]).reshape(-1, 1)
         r_0 = torch.Tensor([r_0]).reshape(-1, 1)
-        optimizer = torch.optim.SGD([beta, gamma, lam, e_0, r_0], lr=lr)
+        optimizer = torch.optim.SGD([beta, gamma, lam, e_0], lr=lr)
     else:
         e_0 = torch.Tensor([e_0]).reshape(-1, 1)
         i_0 = torch.Tensor([i_0]).reshape(-1, 1)

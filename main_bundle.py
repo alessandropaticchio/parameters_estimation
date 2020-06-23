@@ -12,7 +12,7 @@ from utils import SEIR_solution
 
 if __name__ == '__main__':
     # If resume_training is True, it will also load the optimizer and resume training
-    resume_training = True
+    resume_training = False
 
     # Equation parameters
     t_0 = 0
@@ -23,8 +23,8 @@ if __name__ == '__main__':
     i_0_set = [0.01, 0.2]
     r_0_set = [0., 0.001]
     betas = [0.004, 0.01]
-    gammas = [0.15, 0.4]
-    lams = [0.01, 0.03]
+    gammas = [0.15, 0.25]
+    lams = [0.05, 0.09]
 
     # Model parameters
     initial_conditions_set = []
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     initial_conditions_set.append(r_0_set)
 
     train_size = 1000
-    decay = 1e-3
+    decay = 1e-2
     hack_trivial = 0
     epochs = 20000
     lr = 8e-4
@@ -94,12 +94,12 @@ if __name__ == '__main__':
 
 
     # Equation parameters
-    beta = 0.003
-    gamma = 0.07
-    lam = 0.02
-    e_0 = 0.09
-    i_0 = 0.015
-    r_0 = 0.0001
+    beta = 0.008267
+    gamma = 0.17161
+    lam = 0.08111
+    e_0 = 0.081020
+    i_0 = 0.01592
+    r_0 = 0.00095917
     s_0 = 1 - (e_0 + i_0 + r_0)
 
     # Scipy solver solution
@@ -123,9 +123,9 @@ if __name__ == '__main__':
     plt.title('Solving SIR model with Beta = {} | Gamma = {} | Lam = {}\n'
               'Starting conditions: S0 = {:.4f} | E0 = {:.4f} | I0 = {:.4f} | R0 = {:.4f} \n'
               'Model trained on bundle: E(0) in {} | I(0) in {} | R(0) in {} \n'
-              'Beta in {} | Gamma in {} | Lam in {}'.format(round(beta, 2),
-                                                round(gamma, 2),
-                                                round(lam, 2),
+              'Beta in {} | Gamma in {} | Lam in {}'.format(round(beta, 4),
+                                                round(gamma, 4),
+                                                round(lam, 4),
                                                 s_0, e_0, i_0, r_0,
                                                 e_0_set, i_0_set, r_0_set,
                                                 betas,

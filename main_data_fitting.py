@@ -26,10 +26,10 @@ if __name__ == '__main__':
     # The interval in which the equation parameters and the initial conditions should vary
     e_0_set = [0.08, 0.1]
     i_0_set = [0.01, 0.2]
-    r_0_set = [0., 0.001]
+    r_0_set = [0.003, 0.009]
     betas = [0.004, 0.01]
-    gammas = [0.15, 0.4]
-    lams = [0.01, 0.03]
+    gammas = [0.15, 0.25]
+    lams = [0.05, 0.09]
 
     # Model parameters
     initial_conditions_set = []
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     initial_conditions_set.append(r_0_set)
 
     # How many times I want to fit the trajectory, getting the best result
-    n_trials = 10
+    n_trials = 50
 
     # Model parameters
     train_size = 2000
@@ -51,9 +51,9 @@ if __name__ == '__main__':
     # Init model
     seir = SIRNetwork(input=7, layers=4, hidden=50, output=4)
 
-    model_name = 'e_0={}_i_0={}_r_0={}_betas={}_gammas={}.pt'.format(e_0_set, i_0_set, r_0_set,
-                                                                     betas,
-                                                                     gammas)
+    model_name = 'e_0={}_i_0={}_r_0={}_betas={}_gammas={}_lams={}.pt'.format(e_0_set, i_0_set, r_0_set,
+                                                                             betas,
+                                                                             gammas, lams)
 
     try:
         # It tries to load the model, otherwise it trains it
@@ -191,7 +191,6 @@ if __name__ == '__main__':
                                optimal_lam)
         optimal_traj.append([s_optimal, i_optimal, r_optimal])
 
-
     # Generate points between 0 and t_final
     grid = torch.arange(0, t_final, out=torch.FloatTensor()).reshape(-1, 1)
     t_dl = DataLoader(dataset=grid, batch_size=1, shuffle=False)
@@ -251,29 +250,34 @@ if __name__ == '__main__':
         i_hat = np.array(i_hat) * total_population
         r_hat = np.array(r_hat) * total_population
         valid_infected = np.array(valid_infected) * total_population
+        valid_recovered = np.array(valid_recovered) * total_population
         synthetic_infected = np.array(synthetic_infected) * total_population
         known_infected_exact_postlock = np.array(known_infected_exact_postlock) * total_population
         known_recovered_exact_prelock = np.array(known_recovered_exact_prelock) * total_population
         known_recovered_exact_postlock = np.array(known_recovered_exact_postlock) * total_population
 
-        plt.figure(figsize=(30, 8))
+        plt.figure(figsize=(25, 8))
 
         plt.gca().spines['top'].set_visible(False)
         plt.gca().spines['right'].set_visible(False)
         style.use('ggplot')
 
         plt.subplot(1, 2, 1)
-        plt.bar(x_valid_prelock, valid_infected, label='Validation', color=red)
+        marker = 'o'
+        plt.scatter(x_valid_prelock, valid_infected, marker=marker, label='Validation', color=red)
         plt.plot(x_infected_prelock, i_hat, label='Infected Predicted', color=blue)
-        plt.bar(x_train_prelock, synthetic_infected, label='Training', color=green)
-        plt.bar(x_train_postlock, known_infected_exact_postlock, label='Post Lockdown', color=orange)
-        plt.bar(x_new_cases, new_cases, label='New Cases', color=magenta)
-        plt.title('Comparison between real recovered and predicted infected\n'
-                  'Optimal I(0) = {:.6f} | R(0) = {:.6f} \n Beta = {:.6f} | Gamma = {:.6f} \n'.format(
+        plt.scatter(x_train_prelock, synthetic_infected, marker=marker, label='Training', color=green)
+        plt.scatter(x_train_postlock, known_infected_exact_postlock, marker=marker, label='Post Lockdown', color=orange)
+        # plt.bar(x_new_cases, new_cases, label='New Cases', color=magenta)
+        plt.title('Comparison between real infected and predicted infected\n'
+                  'Optimal E(0) = {:.6f} | I(0) = {:.6f} | R(0) = {:.6f} \n '
+                  'Beta = {:.6f} | Gamma = {:.6f} | Lam = {:.6f} \n'.format(
+            optimal_e_0.item(),
             optimal_i_0.item(),
             optimal_r_0.item(),
             optimal_beta.item(),
-            optimal_gamma.item()))
+            optimal_gamma.item(),
+            optimal_lam.item()), fontsize=labelsize)
         plt.legend(loc='best')
         plt.xlabel('t (days)', fontsize=labelsize)
         plt.ylabel('I(t)', fontsize=labelsize)
@@ -281,17 +285,19 @@ if __name__ == '__main__':
         plt.yticks(fontsize=ticksize)
 
         plt.subplot(1, 2, 2)
-        plt.bar(x_valid_prelock, valid_recovered, label='Validation', color=red)
+        plt.scatter(x_valid_prelock, valid_recovered, marker=marker, label='Validation', color=red)
         plt.plot(x_recovered_prelock, r_hat, label='Recovered - Predicted', color=blue)
-        plt.bar(x_train_prelock, known_recovered_exact_prelock, label='Infected', color=green)
-        plt.bar(x_train_postlock, known_recovered_exact_postlock, label='Post Lockdown', color='orange')
+        plt.scatter(x_train_prelock, known_recovered_exact_prelock, marker=marker, label='Training', color=green)
+        plt.scatter(x_train_postlock, known_recovered_exact_postlock, marker=marker, label='Post Lockdown', color='orange')
         plt.title('Comparison between real recovered and predicted recovered\n'
-                  'Optimal I(0) = {:.6f} | R(0) = {:.6f} \n Beta = {:.6f} | Gamma = {:.6f} | Lam = {:.6f} \n'.format(
+                  'Optimal E(0) = {:.6f} | I(0) = {:.6f} | R(0) = {:.6f} \n '
+                  'Beta = {:.6f} | Gamma = {:.6f} | Lam = {:.6f} \n'.format(
+            optimal_e_0.item(),
             optimal_i_0.item(),
             optimal_r_0.item(),
             optimal_beta.item(),
             optimal_gamma.item(),
-            optimal_lam.item()))
+            optimal_lam.item()), fontsize=labelsize)
         plt.legend(loc='best')
         plt.xlabel('t (days)', fontsize=labelsize)
         plt.ylabel('R(t)', fontsize=labelsize)
