@@ -138,7 +138,7 @@ for c in selected_countries:
 
     removed = recovered + deaths
 
-    countries_dict_prelock[c] = [infected, removed, new_cases]
+    countries_dict_prelock[c] = [infected, recovered, deaths, removed, new_cases]
 
     # Sample data after lockdown
     rows = countries_to_fit[(countries_to_fit['Country/Region'] == c) & (countries_to_fit['Date'] >= lockdown_ends[c])]
@@ -149,4 +149,4 @@ for c in selected_countries:
 
     removed = recovered + deaths
 
-    countries_dict_postlock[c] = [infected, removed, new_cases]
+    countries_dict_postlock[c] = [infected, recovered, deaths, removed, new_cases]

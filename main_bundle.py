@@ -1,5 +1,5 @@
 from training import train_bundle
-from constants import ROOT_DIR, red, green, blue, orange
+from constants import *
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 from real_data_regions import *
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     lr = 8e-4
 
     # Init model
-    seir = SIRNetwork(input=9, layers=4, hidden=50, output=5)
+    seird = SIRNetwork(input=9, layers=4, hidden=50, output=5)
 
     model_name = 'e_0={}_i_0={}_r_0={}_d_0={}_betas={}_gammas={}_lams={}_deltas={}.pt'.format(e_0_set, i_0_set, r_0_set,
                                                                                               d_0_set,
@@ -55,17 +55,17 @@ if __name__ == '__main__':
             ROOT_DIR + '/models/SEIRD_bundle_total/{}'.format(model_name))
     except FileNotFoundError:
         # Train
-        optimizer = torch.optim.Adam(seir.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(seird.parameters(), lr=lr)
         writer = SummaryWriter('runs/{}'.format(model_name))
-        seir, train_losses, run_time, optimizer = train_bundle(seir, initial_conditions_set, t_final=t_final,
-                                                               epochs=epochs, model_name=model_name,
-                                                               num_batches=10, hack_trivial=hack_trivial,
-                                                               train_size=train_size, optimizer=optimizer,
-                                                               decay=decay,
-                                                               writer=writer, betas=betas, gammas=gammas, lams=lams,
-                                                               deltas=deltas)
+        seird, train_losses, run_time, optimizer = train_bundle(seird, initial_conditions_set, t_final=t_final,
+                                                                epochs=epochs, model_name=model_name,
+                                                                num_batches=10, hack_trivial=hack_trivial,
+                                                                train_size=train_size, optimizer=optimizer,
+                                                                decay=decay,
+                                                                writer=writer, betas=betas, gammas=gammas, lams=lams,
+                                                                deltas=deltas)
         # Save the model
-        torch.save({'model_state_dict': seir.state_dict(),
+        torch.save({'model_state_dict': seird.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict()},
                    ROOT_DIR + '/models/SEIRD_bundle_total/{}'.format(model_name))
 
@@ -80,22 +80,22 @@ if __name__ == '__main__':
             wr.writerow(train_losses)
 
     # Load the model
-    seir.load_state_dict(checkpoint['model_state_dict'])
+    seird.load_state_dict(checkpoint['model_state_dict'])
 
     if resume_training:
         additional_epochs = 10000
-        optimizer = torch.optim.Adam(seir.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(seird.parameters(), lr=lr)
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         writer = SummaryWriter('runs/' + 'resume_{}'.format(model_name))
-        seir, train_losses, run_time, optimizer = train_bundle(seir, initial_conditions_set, t_final=t_final,
-                                                               epochs=epochs, model_name=model_name,
-                                                               num_batches=10, hack_trivial=hack_trivial,
-                                                               train_size=train_size, optimizer=optimizer,
-                                                               decay=decay,
-                                                               writer=writer, betas=betas, gammas=gammas, lams=lams,
-                                                               deltas=deltas)
+        seird, train_losses, run_time, optimizer = train_bundle(seird, initial_conditions_set, t_final=t_final,
+                                                                epochs=epochs, model_name=model_name,
+                                                                num_batches=10, hack_trivial=hack_trivial,
+                                                                train_size=train_size, optimizer=optimizer,
+                                                                decay=decay,
+                                                                writer=writer, betas=betas, gammas=gammas, lams=lams,
+                                                                deltas=deltas)
         # Save the model
-        torch.save({'model_state_dict': seir.state_dict(),
+        torch.save({'model_state_dict': seird.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict()},
                    ROOT_DIR + '/models/SEIRD_bundle_total/{}'.format(model_name))
 
@@ -114,8 +114,8 @@ if __name__ == '__main__':
     t = np.linspace(0, t_final, t_final)
     s_p, e_p, i_p, r_p, d_p = SEIRD_solution(t, s_0, e_0, i_0, r_0, d_0, beta, gamma, lam, delta)
 
-    s_hat, e_hat, i_hat, r_hat, d_hat, de_loss = seir.solve(e_0=e_0, i_0=i_0, r_0=r_0, d_0=d_0, beta=beta, gamma=gamma,
-                                                            lam=lam, delta=delta, t_0=0, t_final=t_final)
+    s_hat, e_hat, i_hat, r_hat, d_hat, de_loss = seird.solve(e_0=e_0, i_0=i_0, r_0=r_0, d_0=d_0, beta=beta, gamma=gamma,
+                                                             lam=lam, delta=delta, t_0=0, t_final=t_final)
 
     print('DE Loss: {:.15E} | LogLoss = {}'.format(de_loss, np.log(de_loss.item())))
 
@@ -125,15 +125,15 @@ if __name__ == '__main__':
     plt.plot(range(len(e_p)), e_p, label='Exposed - Scipy', linestyle='--', color=orange, linewidth=1.)
     plt.plot(range(len(i_p)), i_p, label='Infected - Scipy', linestyle='--', color=red, linewidth=1.)
     plt.plot(range(len(r_p)), r_p, label='Recovered - Scipy', linestyle='--', color=green, linewidth=1.)
-    plt.plot(range(len(d_p)), d_p, label='Deaths - Scipy', linestyle='--', color=green, linewidth=1.)
+    plt.plot(range(len(d_p)), d_p, label='Deaths - Scipy', linestyle='--', color=purple, linewidth=1.)
     # plt.plot(range(len(s_hat)), s_hat, label='Susceptible', linestyle='-', color=blue, linewidth=1.)
     plt.plot(range(len(e_hat)), e_hat, label='Exposed', linestyle='-', color=orange, linewidth=1.)
     plt.plot(range(len(i_hat)), i_hat, label='Infected', linestyle='-', color=red, linewidth=1.)
     plt.plot(range(len(r_hat)), r_hat, label='Recovered', linestyle='-', color=green, linewidth=1.)
-    plt.plot(range(len(d_hat)), d_hat, label='Deaths', linestyle='-', color=green, linewidth=1.)
+    plt.plot(range(len(d_hat)), d_hat, label='Deaths', linestyle='-', color=purple, linewidth=1.)
     plt.title('Solving SIR model with Beta = {} | Gamma = {} | Lam = {} | Delta = {}\n'
               'Starting conditions: S0 = {:.4f} | E0 = {:.4f} | I0 = {:.4f} | R0 = {:.4f} | D0 = {:.4f}\n'
-              'Model trained on bundle: E(0) in {} | I(0) in {} | R(0) in {} | D(0) in {}\n'
+              'Bundle: E(0) in {} | I(0) in {} | R(0) in {} | D(0) in {}\n'
               'Beta in {} | Gamma in {} | Lam in {} | Delta in {}'.format(round(beta, 4),
                                                                           round(gamma, 4),
                                                                           round(lam, 4), round(delta, 4),

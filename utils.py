@@ -152,11 +152,13 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
                 break
 
     area_infected = np.array(data_dict[area][0][d:])
-    area_removed = np.array(data_dict[area][1][d:])
-    area_new_cases = data_dict[area][2][d:]
+    area_recovered = np.array(data_dict[area][1][d:])
+    area_deaths = np.array(data_dict[area][2][d:])
+    area_removed = np.array(data_dict[area][3][d:])
+    area_new_cases = data_dict[area][4][d:]
 
     # Going from active cases to cumulated cases and rescaling by a given factor
-    area_infected = ((area_infected + area_removed) * multiplication_factor )
+    area_infected = ((area_infected + area_removed) * multiplication_factor)
 
     # Rescaling by a given factor
     area_removed =  area_removed * multiplication_factor
@@ -167,16 +169,15 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
     # Rescale infected and removed between 0 and 1
     if scaled:
         area_infected = np.array(area_infected) / population
+        area_recovered = np.array(area_recovered) / population
+        area_deaths = np.array(area_deaths) / population
         area_removed = np.array(area_removed) / population
 
     times = []
 
     for i in range(len(area_infected)):
         times.append(i * time_unit)
-        if scaled:
-            traj[i * time_unit] = [1 - (area_infected[i] + area_removed[i]), area_infected[i], area_removed[i]]
-        else:
-            traj[i * time_unit] = [population - (area_infected[i] + area_removed[i]), area_infected[i], area_removed[i]]
+        traj[i * time_unit] = [area_infected[i], area_recovered[i], area_deaths[i]]
 
     # If I don't want to select contiguous day, I will get just a subset
     if skip_every:
