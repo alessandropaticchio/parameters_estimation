@@ -36,10 +36,10 @@ if __name__ == '__main__':
     initial_conditions_set.append(r_0_set)
     initial_conditions_set.append(d_0_set)
 
-    train_size = 1000
+    train_size = 2000
     decay = 1e-2
     hack_trivial = 0
-    epochs = 1
+    epochs = 5000
     lr = 8e-4
 
     # Init model
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     try:
         # It tries to load the model, otherwise it trains it
         checkpoint = torch.load(
-            ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
+            ROOT_DIR + '/models/SEIRD_bundle_total/{}'.format(model_name))
     except FileNotFoundError:
         # Train
         optimizer = torch.optim.Adam(seir.parameters(), lr=lr)
@@ -67,11 +67,11 @@ if __name__ == '__main__':
         # Save the model
         torch.save({'model_state_dict': seir.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict()},
-                   ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
+                   ROOT_DIR + '/models/SEIRD_bundle_total/{}'.format(model_name))
 
         # Load the checkpoint
         checkpoint = torch.load(
-            ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
+            ROOT_DIR + '/models/SEIRD_bundle_total/{}'.format(model_name))
 
         import csv
 
@@ -97,7 +97,7 @@ if __name__ == '__main__':
         # Save the model
         torch.save({'model_state_dict': seir.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict()},
-                   ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
+                   ROOT_DIR + '/models/SEIRD_bundle_total/{}'.format(model_name))
 
     # Equation parameters
     beta = 0.008267

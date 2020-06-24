@@ -81,7 +81,7 @@ def SEIRD_solution(t, s_0, e_0, i_0, r_0, d_0, beta, gamma, lam, delta):
     return s, e, i, r, d
 
 
-### END SEIRD MODEL
+### END SEIRD_bundle_total MODEL
 
 
 # Function to sample synthetic data from a generic solution of a model
