@@ -25,8 +25,9 @@ if __name__ == '__main__':
     d_0_set = [0., 0.001]
     betas = [0.004, 0.01]
     gammas = [0.15, 0.25]
-    lams = [0.05, 0.09]
-    deltas = [0.05, 0.09]
+    lams = [0.05, 0.15]
+    deltas = [0.15, 0.25]
+
 
     # Model parameters
     initial_conditions_set = []

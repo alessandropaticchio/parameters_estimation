@@ -30,8 +30,8 @@ if __name__ == '__main__':
     d_0_set = [0., 0.001]
     betas = [0.004, 0.01]
     gammas = [0.15, 0.25]
-    lams = [0.05, 0.09]
-    deltas = [0.05, 0.09]
+    lams = [0.05, 0.15]
+    deltas = [0.15, 0.25]
 
     # Model parameters
     initial_conditions_set = []
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     initial_conditions_set.append(d_0_set)
 
     # How many times I want to fit the trajectory, getting the best result
-    n_trials = 50
+    n_trials = 20
 
     # Model parameters
     train_size = 2000
@@ -86,13 +86,6 @@ if __name__ == '__main__':
     # Load the model
     seird.load_state_dict(checkpoint['model_state_dict'])
 
-    writer_dir = 'runs/' + 'fitting_{}'.format(model_name)
-
-    # Check if the writer directory exists, if yes delete it and overwrite
-    if os.path.isdir(writer_dir):
-        rmtree(writer_dir)
-    writer = SummaryWriter(writer_dir)
-
     if mode == 'real':
         area = 'Italy'
         time_unit = 0.25
@@ -113,7 +106,7 @@ if __name__ == '__main__':
         recovered_weight = 1.
         infected_weight = 1.
         deaths_weight = 1.
-        force_init = False
+        force_init = True
     else:
         # Synthetic data
         # TODO This has to be update to SEIRD
@@ -160,22 +153,23 @@ if __name__ == '__main__':
     for i in range(n_trials):
         print('Fit no. {}\n'.format(i + 1))
         e_0, i_0, r_0, d_0, beta, gamma, lam, delta, rnd_init, traj_mse = fit(seird,
-                                                                  init_bundle=initial_conditions_set,
-                                                                  betas=betas,
-                                                                  gammas=gammas,
-                                                                  lams=lams,
-                                                                deltas=deltas,
-                                                                  steps=train_size, lr=1e-1,
-                                                                  known_points=data_prelock,
-                                                                  writer=writer,
-                                                                  loss_mode=loss_mode,
-                                                                  epochs=fit_epochs,
-                                                                  verbose=True,
-                                                                  infected_weight=infected_weight,
-                                                                  recovered_weight=recovered_weight,
-                                                                  deaths_weight=deaths_weight,
-                                                                  force_init=force_init)
-        s_0 = 1 - (e_0 + i_0 + r_0)
+                                                                              init_bundle=initial_conditions_set,
+                                                                              betas=betas,
+                                                                              gammas=gammas,
+                                                                              lams=lams,
+                                                                              deltas=deltas,
+                                                                              steps=train_size, lr=1e-1,
+                                                                              known_points=data_prelock,
+                                                                              writer=None,
+                                                                              loss_mode=loss_mode,
+                                                                              epochs=fit_epochs,
+                                                                              verbose=True,
+                                                                              infected_weight=infected_weight,
+                                                                              recovered_weight=recovered_weight,
+                                                                              deaths_weight=deaths_weight,
+                                                                              force_init=force_init)
+
+        s_0 = 1 - (e_0 + i_0 + r_0 + d_0)
 
         if traj_mse < min_loss:
             optimal_s_0, optimal_e_0, optimal_i_0, optimal_r_0, optimal_d_0, optimal_beta, optimal_gamma, optimal_lam, optimal_delta = s_0, e_0, i_0, r_0, d_0, beta, gamma, lam, delta
@@ -197,8 +191,7 @@ if __name__ == '__main__':
     for i, t in enumerate(t_dl, 0):
         # Network solutions
         s, e, i, r, d = seird.parametric_solution(t, optimal_initial_conditions, beta=optimal_beta, gamma=optimal_gamma,
-                                               lam=optimal_lam, delta=optimal_delta,
-                                               mode='bundle_total')
+                                                  lam=optimal_lam, delta=optimal_delta)
         s_hat.append(s.item())
         e_hat.append(e.item())
         i_hat.append(i.item())
@@ -272,7 +265,7 @@ if __name__ == '__main__':
         marker = 'o'
         plt.scatter(x_valid_prelock, valid_infected, marker=marker, label='Validation', color=red)
         plt.plot(x_infected_prelock, i_hat, label='Infected Predicted', color=blue)
-        plt.scatter(x_train_prelock, known_infected_exact_postlock, marker=marker, label='Training', color=green)
+        plt.scatter(x_train_prelock, known_infected_exact_prelock, marker=marker, label='Training', color=green)
         plt.scatter(x_train_postlock, known_infected_exact_postlock, marker=marker, label='Post Lockdown', color=orange)
         # plt.bar(x_new_cases, new_cases, label='New Cases', color=magenta)
         plt.title('Comparison between real deaths and predicted deaths\n'
@@ -296,7 +289,8 @@ if __name__ == '__main__':
         plt.scatter(x_valid_prelock, valid_recovered, marker=marker, label='Validation', color=red)
         plt.plot(x_recovered_prelock, r_hat, label='Recovered - Predicted', color=blue)
         plt.scatter(x_train_prelock, known_recovered_exact_prelock, marker=marker, label='Training', color=green)
-        plt.scatter(x_train_postlock, known_recovered_exact_postlock, marker=marker, label='Post Lockdown', color='orange')
+        plt.scatter(x_train_postlock, known_recovered_exact_postlock, marker=marker, label='Post Lockdown',
+                    color='orange')
         plt.title('Comparison between real deaths and predicted deaths\n'
                   'Optimal E(0) = {:.6f} | I(0) = {:.6f} | R(0) = {:.6f} | D(0) = {:.6f}\n '
                   'Beta = {:.6f} | Gamma = {:.6f} | Lam = {:.6f} | Delta = {:.6f}\n'.format(
