@@ -3,6 +3,38 @@ import numpy as np
 from torch.autograd import grad
 from constants import device, dtype
 
+def seird_loss(t, s, e, i, r, d, beta, gamma, lam, delta, decay=0):
+    s_prime = dfx(t, s)
+    e_prime = dfx(t, e)
+    i_prime = dfx(t, i)
+    r_prime = dfx(t, r)
+    d_prime = dfx(t, d)
+
+    N = 1
+
+    loss_s = s_prime + (beta * i * s) / N
+    loss_e = e_prime - (beta * i * s) / N + lam * e
+    loss_i = i_prime - lam * e + (gamma + delta) * i
+    loss_r = r_prime - gamma * i
+    loss_d = d_prime - delta * i
+
+    # Regularize to give more importance to initial points
+    loss_s = loss_s * torch.exp(-decay * t)
+    loss_e = loss_e * torch.exp(-decay * t)
+    loss_i = loss_i * torch.exp(-decay * t)
+    loss_r = loss_r * torch.exp(-decay * t)
+    loss_d = loss_d * torch.exp(-decay * t)
+
+    loss_s = (loss_s.pow(2)).mean()
+    loss_e = (loss_e.pow(2)).mean()
+    loss_i = (loss_i.pow(2)).mean()
+    loss_r = (loss_r.pow(2)).mean()
+    loss_d = (loss_d.pow(2)).mean()
+
+    total_loss = loss_s + loss_e + loss_i + loss_r + loss_d
+
+    return total_loss
+
 def seir_loss(t, s, e, i, r, beta, gamma, lam, decay=0):
     s_prime = dfx(t, s)
     e_prime = dfx(t, e)

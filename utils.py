@@ -53,7 +53,35 @@ def SEIR_solution(t, s_0, e_0, i_0, r_0, beta, gamma, lam):
     return s, e, i, r
 
 
-### END SEIR MODEL
+### END SEIR
+
+# Use below in the Scipy Solver
+def f_seird(u, t, beta, gamma, lam, delta):
+    s, e, i, r, d = u  # unpack current values of u
+    N = s + i + r + e + d
+    derivs = [-(beta * i * s) / N, (beta * i * s) / N - lam * e, lam * e - (gamma + delta) * i,
+              gamma * i, delta * i]  # list of dy/dt=f functions
+
+    return derivs
+
+
+# Scipy Solver
+def SEIRD_solution(t, s_0, e_0, i_0, r_0, d_0, beta, gamma, lam, delta):
+    u_0 = [s_0, e_0, i_0, r_0, d_0]
+
+    # Call the ODE solver
+    sol_sir = odeint(f_seird, u_0, t, args=(beta, gamma, lam, delta))
+
+    s = sol_sir[:, 0]
+    e = sol_sir[:, 1]
+    i = sol_sir[:, 2]
+    r = sol_sir[:, 3]
+    d = sol_sir[:, 4]
+
+    return s, e, i, r, d
+
+
+### END SEIRD MODEL
 
 
 # Function to sample synthetic data from a generic solution of a model

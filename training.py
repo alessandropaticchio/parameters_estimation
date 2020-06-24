@@ -10,7 +10,7 @@ from utils import generate_dataloader, generate_grid
 from numpy.random import uniform
 
 
-def train_bundle(model, initial_conditions_set, t_final, epochs, train_size, optimizer, betas, gammas, lams, model_name,
+def train_bundle(model, initial_conditions_set, t_final, epochs, train_size, optimizer, betas, gammas, lams, deltas, model_name,
                  decay=0, num_batches=1, hack_trivial=False,
                  treshold=float('-inf'), verbose=True, writer=None):
 
@@ -43,25 +43,30 @@ def train_bundle(model, initial_conditions_set, t_final, epochs, train_size, opt
             e_0 = uniform(initial_conditions_set[0][0], initial_conditions_set[0][1], size=batch_size)
             i_0 = uniform(initial_conditions_set[1][0], initial_conditions_set[1][1], size=batch_size)
             r_0 = uniform(initial_conditions_set[2][0], initial_conditions_set[2][1], size=batch_size)
+            d_0 = uniform(initial_conditions_set[3][0], initial_conditions_set[3][1], size=batch_size)
             beta = uniform(betas[0], betas[1], size=batch_size)
             gamma = uniform(gammas[0], gammas[1], size=batch_size)
             lam = uniform(lams[0], lams[1], size=batch_size)
+            delta = uniform(deltas[0], deltas[1], size=batch_size)
 
             e_0 = torch.Tensor([e_0]).reshape((-1, 1))
             i_0 = torch.Tensor([i_0]).reshape((-1, 1))
             r_0 = torch.Tensor([r_0]).reshape((-1, 1))
+            d_0 = torch.Tensor([d_0]).reshape((-1, 1))
             beta = torch.Tensor([beta]).reshape((-1, 1))
             gamma = torch.Tensor([gamma]).reshape((-1, 1))
             lam = torch.Tensor([lam]).reshape((-1, 1))
+            delta = torch.Tensor([delta]).reshape((-1, 1))
 
-            s_0 = 1 - (e_0 + i_0 + r_0)
-            initial_conditions = [s_0, e_0, i_0, r_0]
+
+            s_0 = 1 - (e_0 + i_0 + r_0 + d_0)
+            initial_conditions = [s_0, e_0, i_0, r_0, d_0]
 
             #  Network solutions
-            s, e, i, r = model.parametric_solution(t, initial_conditions, beta, gamma, lam, mode='bundle_total')
+            s, e, i, r, d = model.parametric_solution(t, initial_conditions, beta, gamma, lam, delta)
 
             # Loss computation
-            batch_loss = seir_loss(t, s, e, i, r, beta=beta, gamma=gamma, lam=lam, decay=decay)
+            batch_loss = seird_loss(t, s, e, i, r, d, beta=beta, gamma=gamma, lam=lam, delta=delta, decay=decay)
 
             # Hack to prevent the network from solving the equations trivially
             if hack_trivial:

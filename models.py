@@ -1,7 +1,7 @@
 from torch.nn.functional import softmax
 from torch.utils.data import DataLoader
 import torch
-from losses import seir_loss
+from losses import seird_loss
 
 # Define the sin() activation function
 class mySin(torch.nn.Module):
@@ -37,39 +37,41 @@ class SIRNetwork(torch.nn.Module):
         e_N = (x[:, 1]).reshape(-1 ,1)
         i_N = (x[:, 2]).reshape(-1, 1)
         r_N = (x[:, 3]).reshape(-1, 1)
-        return s_N, e_N, i_N, r_N
+        d_N = (x[:, 4]).reshape(-1, 1)
+        return s_N, e_N, i_N, r_N, d_N
 
-    def parametric_solution(self, t, initial_conditions, beta=None, gamma=None, lam=None, mode=None):
+    def parametric_solution(self, t, initial_conditions, beta=None, gamma=None, lam=None, delta=None):
         # Parametric solutions
         t_0 = 0
-        s_0, e_0, i_0, r_0 = initial_conditions[0][:], initial_conditions[1][:], initial_conditions[2][:], initial_conditions[3][:]
+        s_0, e_0, i_0, r_0, d_0 = initial_conditions[0][:], initial_conditions[1][:], initial_conditions[2][:], initial_conditions[3][:], initial_conditions[4][:]
 
         dt = t - t_0
 
         f = (1 - torch.exp(-dt))
 
-        t_bundle = torch.cat([t, e_0, i_0, r_0, beta, gamma, lam], dim=1)
+        t_bundle = torch.cat([t, e_0, i_0, r_0, d_0, beta, gamma, lam, delta], dim=1)
 
         N = self.forward(t_bundle)
 
-        N1, N2, N3, N4 = N
+        N1, N2, N3, N4, N5 = N
 
         # Concatenate to go into softmax
-        to_softmax = torch.cat([N1, N2, N3, N4], dim=1)
+        to_softmax = torch.cat([N1, N2, N3, N4, N5], dim=1)
         softmax_output = softmax(to_softmax, dim=1)
-        N1, N2, N3, N4 = softmax_output[:,0], softmax_output[:, 1], softmax_output[:, 2], softmax_output[:, 3]
-        N1, N2, N3, N4 = N1.reshape(-1, 1), N2.reshape(-1, 1), N3.reshape(-1, 1), N4.reshape(-1, 1)
+        N1, N2, N3, N4, N5 = softmax_output[:,0], softmax_output[:, 1], softmax_output[:, 2], softmax_output[:, 3], softmax_output[:, 4]
+        N1, N2, N3, N4, N5 = N1.reshape(-1, 1), N2.reshape(-1, 1), N3.reshape(-1, 1), N4.reshape(-1, 1), N5.reshape(-1, 1)
 
         s_hat = (s_0 + f * (N1 - s_0))
         e_hat = (e_0 + f * (N2 - e_0))
         i_hat = (i_0 + f * (N3 - i_0))
         r_hat = (r_0 + f * (N4 - r_0))
+        d_hat = (d_0 + f * (N5 - d_0))
 
-        return s_hat, e_hat, i_hat, r_hat
+        return s_hat, e_hat, i_hat, r_hat, d_hat
 
     # Use the model to provide a solution with a given set of initial conditions and parameters
-    def solve(self, e_0, i_0, r_0, beta, gamma, lam, t_0=0, t_final=20):
-        s_0 = 1 - e_0 - i_0 - r_0
+    def solve(self, e_0, i_0, r_0, d_0, beta, gamma, lam, delta, t_0=0, t_final=20):
+        s_0 = 1 - e_0 - i_0 - r_0 - d_0
 
         # Test between 0 and t_final
         grid = torch.arange(t_0, t_final, out=torch.FloatTensor()).reshape(-1, 1)
@@ -78,28 +80,33 @@ class SIRNetwork(torch.nn.Module):
         e_hat = []
         i_hat = []
         r_hat = []
+        d_hat = []
 
         # Convert initial conditions, beta and gamma to tensor for prediction
         beta_t = torch.Tensor([beta]).reshape(-1, 1)
         gamma_t = torch.Tensor([gamma]).reshape(-1, 1)
         lam_t = torch.Tensor([lam]).reshape(-1, 1)
+        delta_t = torch.Tensor([delta]).reshape(-1, 1)
         s_0_t = torch.Tensor([s_0]).reshape(-1, 1)
         e_0_t = torch.Tensor([e_0]).reshape(-1, 1)
         i_0_t = torch.Tensor([i_0]).reshape(-1, 1)
         r_0_t = torch.Tensor([r_0]).reshape(-1, 1)
-        initial_conditions_set = [s_0_t, e_0_t, i_0_t, r_0_t]
+        d_0_t = torch.Tensor([d_0]).reshape(-1, 1)
+
+        initial_conditions_set = [s_0_t, e_0_t, i_0_t, r_0_t, d_0_t]
 
         de_loss = 0.
         for i, t in enumerate(t_dl, 0):
             t.requires_grad = True
 
             # Network solutions
-            s, e, i, r = self.parametric_solution(t, initial_conditions_set, beta=beta_t, gamma=gamma_t, lam=lam_t)
+            s, e, i, r, d = self.parametric_solution(t, initial_conditions_set, beta=beta_t, gamma=gamma_t, lam=lam_t, delta=delta_t)
             s_hat.append(s.item())
             e_hat.append(e.item())
             i_hat.append(i.item())
             r_hat.append(r.item())
+            d_hat.append(d.item())
 
-            de_loss += seir_loss(t, s, e, i, r, beta_t, gamma_t, lam_t)
+            de_loss += seird_loss(t, s, e, i, r, d, beta_t, gamma_t, lam_t, delta_t)
 
-        return s_hat, e_hat, i_hat, r_hat, de_loss
+        return s_hat, e_hat, i_hat, r_hat, d_hat, de_loss
