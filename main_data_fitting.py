@@ -30,7 +30,7 @@ if __name__ == '__main__':
     d_0_set = [0., 0.001]
     betas = [0.004, 0.01]
     gammas = [0.15, 0.25]
-    lams = [0.05, 0.15]
+    lams = [0.08, 0.15]
     deltas = [0.15, 0.25]
 
     # Model parameters
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     initial_conditions_set.append(d_0_set)
 
     # How many times I want to fit the trajectory, getting the best result
-    n_trials = 20
+    n_trials = 10
 
     # Model parameters
     train_size = 2000
@@ -106,7 +106,7 @@ if __name__ == '__main__':
         recovered_weight = 1.
         infected_weight = 1.
         deaths_weight = 1.
-        force_init = True
+        force_init = False
     else:
         # Synthetic data
         # TODO This has to be update to SEIRD
