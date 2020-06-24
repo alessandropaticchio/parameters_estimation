@@ -37,7 +37,7 @@ x_postlock = np.array(list(data_postlock.keys())) + list(data_prelock.keys())[-1
 # Scipy solver solution
 beta = 0.008
 gamma = 0.22
-lam = 0.1
+lam = 0.09
 delta = 0.2
 
 # Fix the initial conditions as the first element of the infected and recovered data
