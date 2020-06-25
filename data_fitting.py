@@ -70,7 +70,7 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
 
             s_hat, e_hat, i_hat, r_hat = model.parametric_solution(t_tensor, initial_conditions, beta=beta, gamma=gamma,
                                                                    lam=lam,
-                                                                   mode='bundle_total')
+                                                                   )
 
             i_target = target[1]
             r_target = target[2]

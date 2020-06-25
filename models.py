@@ -40,7 +40,7 @@ class SIRNetwork(torch.nn.Module):
         r_N = (x[:, 3]).reshape(-1, 1)
         return s_N, e_N, i_N, r_N
 
-    def parametric_solution(self, t, initial_conditions, beta=None, gamma=None, lam=None, mode=None):
+    def parametric_solution(self, t, initial_conditions, beta=None, gamma=None, lam=None):
         # Parametric solutions
         t_0 = 0
         s_0, e_0, i_0, r_0 = initial_conditions[0][:], initial_conditions[1][:], initial_conditions[2][:], \

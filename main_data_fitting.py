@@ -26,10 +26,10 @@ if __name__ == '__main__':
     # The interval in which the equation parameters and the initial conditions should vary
     e_0_set = [0.08, 0.1]
     i_0_set = [0.01, 0.2]
-    r_0_set = [0.003, 0.009]
-    betas = [0.004, 0.01]
-    gammas = [0.15, 0.25]
-    lams = [0.05, 0.09]
+    r_0_set = [0.004, 0.009]
+    betas = [0.05, 0.08]
+    gammas = [0.05, 0.15]
+    lams = [0.02, 0.04]
 
     # Model parameters
     initial_conditions_set = []
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     initial_conditions_set.append(r_0_set)
 
     # How many times I want to fit the trajectory, getting the best result
-    n_trials = 10
+    n_trials = 50
 
     # Model parameters
     train_size = 2000
@@ -142,7 +142,7 @@ if __name__ == '__main__':
             valid_recovered.append(data_prelock[k][2])
             del data_prelock[k]
 
-    fit_epochs = 1000
+    fit_epochs = 100
 
     min_loss = 1000
     loss_mode = 'mse'
@@ -184,8 +184,7 @@ if __name__ == '__main__':
         s_optimal, e_optimal, i_optimal, r_optimal = seir.parametric_solution(t_tensor, optimal_initial_conditions,
                                                                               beta=optimal_beta,
                                                                               gamma=optimal_gamma,
-                                                                              lam=optimal_lam,
-                                                                              mode='bundle_total')
+                                                                              lam=optimal_lam)
 
         optimal_de += sir_loss(t_tensor, s_optimal, e_optimal, i_optimal, r_optimal, optimal_beta, optimal_gamma,
                                optimal_lam)
@@ -201,8 +200,7 @@ if __name__ == '__main__':
     for i, t in enumerate(t_dl, 0):
         # Network solutions
         s, e, i, r = seir.parametric_solution(t, optimal_initial_conditions, beta=optimal_beta, gamma=optimal_gamma,
-                                              lam=optimal_lam,
-                                              mode='bundle_total')
+                                              lam=optimal_lam)
         s_hat.append(s.item())
         e_hat.append(e.item())
         i_hat.append(i.item())
@@ -339,3 +337,5 @@ if __name__ == '__main__':
         plt.tight_layout()
 
         plt.show()
+
+    print('MSE: {}'.format(min_loss))
