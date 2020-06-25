@@ -39,7 +39,7 @@ if __name__ == '__main__':
     initial_conditions_set.append(r_0_set)
 
     # How many times I want to fit the trajectory, getting the best result
-    n_trials = 50
+    n_trials = 10
 
     # Model parameters
     train_size = 2000
@@ -142,7 +142,7 @@ if __name__ == '__main__':
             valid_recovered.append(data_prelock[k][2])
             del data_prelock[k]
 
-    fit_epochs = 100
+    fit_epochs = 1000
 
     min_loss = 1000
     loss_mode = 'mse'

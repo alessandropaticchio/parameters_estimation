@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 import torch
 from losses import seir_loss
 
+
 # Define the sin() activation function
 class mySin(torch.nn.Module):
     @staticmethod
@@ -13,7 +14,7 @@ class mySin(torch.nn.Module):
 class SIRNetwork(torch.nn.Module):
     def __init__(self, activation=None, input=1, layers=2, hidden=10, output=3):
 
-        self.n_output=output
+        self.n_output = output
 
         super(SIRNetwork, self).__init__()
         if activation is None:
@@ -34,7 +35,7 @@ class SIRNetwork(torch.nn.Module):
     def forward(self, x):
         x = self.ffn(x)
         s_N = (x[:, 0]).reshape(-1, 1)
-        e_N = (x[:, 1]).reshape(-1 ,1)
+        e_N = (x[:, 1]).reshape(-1, 1)
         i_N = (x[:, 2]).reshape(-1, 1)
         r_N = (x[:, 3]).reshape(-1, 1)
         return s_N, e_N, i_N, r_N
@@ -42,7 +43,8 @@ class SIRNetwork(torch.nn.Module):
     def parametric_solution(self, t, initial_conditions, beta=None, gamma=None, lam=None, mode=None):
         # Parametric solutions
         t_0 = 0
-        s_0, e_0, i_0, r_0 = initial_conditions[0][:], initial_conditions[1][:], initial_conditions[2][:], initial_conditions[3][:]
+        s_0, e_0, i_0, r_0 = initial_conditions[0][:], initial_conditions[1][:], initial_conditions[2][:], \
+                             initial_conditions[3][:]
 
         dt = t - t_0
 
@@ -57,7 +59,7 @@ class SIRNetwork(torch.nn.Module):
         # Concatenate to go into softmax
         to_softmax = torch.cat([N1, N2, N3, N4], dim=1)
         softmax_output = softmax(to_softmax, dim=1)
-        N1, N2, N3, N4 = softmax_output[:,0], softmax_output[:, 1], softmax_output[:, 2], softmax_output[:, 3]
+        N1, N2, N3, N4 = softmax_output[:, 0], softmax_output[:, 1], softmax_output[:, 2], softmax_output[:, 3]
         N1, N2, N3, N4 = N1.reshape(-1, 1), N2.reshape(-1, 1), N3.reshape(-1, 1), N4.reshape(-1, 1)
 
         s_hat = (s_0 + f * (N1 - s_0))
@@ -68,11 +70,12 @@ class SIRNetwork(torch.nn.Module):
         return s_hat, e_hat, i_hat, r_hat
 
     # Use the model to provide a solution with a given set of initial conditions and parameters
-    def solve(self, e_0, i_0, r_0, beta, gamma, lam, t_0=0, t_final=20):
+    def solve(self, e_0, i_0, r_0, beta, gamma, lam, t_0=0, t_final=20, size=20):
         s_0 = 1 - e_0 - i_0 - r_0
 
         # Test between 0 and t_final
-        grid = torch.arange(t_0, t_final, out=torch.FloatTensor()).reshape(-1, 1)
+        step = (t_final - t_0) / size
+        grid = torch.arange(t_0, t_final, step=step, out=torch.FloatTensor()).reshape(-1, 1)
         t_dl = DataLoader(dataset=grid, batch_size=1, shuffle=False)
         s_hat = []
         e_hat = []
