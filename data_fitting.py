@@ -6,7 +6,7 @@ import numpy as np
 from numpy.random import uniform
 
 
-def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, epochs=100, lr=8e-4, loss_mode='mse',
+def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, epochs=100, lr=8e-4, loss_mode='mse', n_batches=3,
         susceptible_weight=1., exposed_weight=1.,
         recovered_weight=1., force_init=False, verbose=False):
     model.eval()
@@ -28,12 +28,15 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
         e_0 = torch.Tensor([e_0]).reshape(-1, 1)
         i_0 = torch.Tensor([i_0]).reshape(-1, 1)
         r_0 = torch.Tensor([r_0]).reshape(-1, 1)
-        optimizer = torch.optim.SGD([beta, gamma, lam, e_0], lr=lr)
+        optimizer = torch.optim.Adam([beta, gamma, lam, e_0], lr=lr)
     else:
         e_0 = torch.Tensor([e_0]).reshape(-1, 1)
         i_0 = torch.Tensor([i_0]).reshape(-1, 1)
         r_0 = torch.Tensor([r_0]).reshape(-1, 1)
-        optimizer = torch.optim.SGD([e_0, i_0, r_0, beta, gamma, lam], lr=lr)
+        optimizer = torch.optim.Adam([e_0, i_0, r_0, beta, gamma, lam], lr=lr)
+
+    # Learning rate scheduler
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=50)
 
     s_0 = 1 - (e_0 + i_0 + r_0)
 
@@ -51,6 +54,8 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
 
     known_t = copy.deepcopy(list(known_points.keys()))
 
+    batch_size = int(len(known_t) / n_batches)
+
     losses = []
 
     # Iterate for epochs to find best initial conditions, beta, and gamma that optimizes the MSE/Cross Entropy between
@@ -58,12 +63,18 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
     for epoch in tqdm(range(epochs), desc='Finding the best inputs', disable=not verbose):
         optimizer.zero_grad()
 
-        loss = 0.
-
         # Take the time points and shuffle them
         shuffle(known_t)
 
-        for t in known_t:
+        batch_filling = 0.
+
+        epoch_loss = 0.
+        batch_loss = 0.
+
+        for idx, t in enumerate(known_t):
+
+            batch_filling += 1
+
             target = known_points[t]
 
             t_tensor = torch.Tensor([t]).reshape(-1, 1)
@@ -90,16 +101,33 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
             else:
                 regularization = 0.
 
-            # Weighting that regularizes how much we want to weight the Recovered/Susceptible curve
             loss_r = loss_r * recovered_weight
 
-            loss += loss_i + loss_r + regularization
+            batch_loss += loss_i + loss_r + regularization
 
-        loss = loss / len(known_points.keys())
-        losses.append(loss)
+            if batch_size == batch_filling:
+                # Weighting that regularizes how much we want to weight the Recovered/Susceptible curve
 
-        loss.backward(retain_graph=True)
-        optimizer.step()
+                batch_loss = batch_loss / len(known_points.keys())
+                epoch_loss += batch_loss
+
+                batch_loss.backward(retain_graph=True)
+                optimizer.step()
+
+                batch_filling = 0
+                batch_loss = 0.
+
+        # For the last batch
+        if batch_filling != 0:
+            batch_loss = batch_loss / len(known_points.keys())
+            epoch_loss += batch_loss
+
+            batch_loss.backward(retain_graph=True)
+            optimizer.step()
+
+        lr_scheduler.step()
+
+        losses.append(epoch_loss)
 
         # To prevent r_0 to go negative in extreme cases:
         if r_0 < 0.:
@@ -110,9 +138,10 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
         initial_conditions = [s_0, e_0, i_0, r_0]
 
         if writer:
-            writer.add_scalar('Loss/train', loss, epoch)
+            writer.add_scalar('Loss/train', epoch_loss, epoch)
 
-    return e_0, i_0, r_0, beta, gamma, lam, rnd_init, losses[-1]
+
+    return e_0, i_0, r_0, beta, gamma, lam, rnd_init, losses
 
 
 def cross_entropy(predictions, targets, epsilon=1e-12):

@@ -39,11 +39,14 @@ if __name__ == '__main__':
     initial_conditions_set.append(r_0_set)
 
     # How many times I want to fit the trajectory, getting the best result
-    n_trials = 50
+    n_trials = 1
+    fit_epochs = 10000
+    n_batches = 10
+    fit_lr = 1e-4
 
     # Model parameters
     train_size = 2000
-    decay = 1e-4
+    decay = 1e-3
     hack_trivial = False
     epochs = 3000
     lr = 8e-4
@@ -142,34 +145,33 @@ if __name__ == '__main__':
             valid_recovered.append(data_prelock[k][2])
             del data_prelock[k]
 
-    fit_epochs = 100
-
-    min_loss = 1000
+    min_loss = 10000
     loss_mode = 'mse'
 
     # Fit n_trials time and take the best fitting
     for i in range(n_trials):
         print('Fit no. {}\n'.format(i + 1))
-        e_0, i_0, r_0, beta, gamma, lam, rnd_init, traj_mse = fit(seir,
-                                                                  init_bundle=initial_conditions_set,
-                                                                  betas=betas,
-                                                                  gammas=gammas,
-                                                                  lams=lams,
-                                                                  steps=train_size, lr=1e-1,
-                                                                  known_points=data_prelock,
-                                                                  writer=writer,
-                                                                  loss_mode=loss_mode,
-                                                                  epochs=fit_epochs,
-                                                                  verbose=True,
-                                                                  susceptible_weight=susceptible_weight,
-                                                                  exposed_weight=exposed_weight,
-                                                                  recovered_weight=recovered_weight,
-                                                                  force_init=force_init)
+        e_0, i_0, r_0, beta, gamma, lam, rnd_init, losses = fit(seir,
+                                                                init_bundle=initial_conditions_set,
+                                                                betas=betas,
+                                                                gammas=gammas,
+                                                                lams=lams,
+                                                                steps=train_size, lr=fit_lr,
+                                                                known_points=data_prelock,
+                                                                writer=writer,
+                                                                loss_mode=loss_mode,
+                                                                epochs=fit_epochs,
+                                                                verbose=True,
+                                                                n_batches=n_batches,
+                                                                susceptible_weight=susceptible_weight,
+                                                                exposed_weight=exposed_weight,
+                                                                recovered_weight=recovered_weight,
+                                                                force_init=force_init)
         s_0 = 1 - (e_0 + i_0 + r_0)
 
-        if traj_mse < min_loss:
+        if losses[-1] < min_loss:
             optimal_s_0, optimal_e_0, optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma, optimal_lam = s_0, e_0, i_0, r_0, beta, gamma, lam
-            min_loss = traj_mse
+            min_loss = losses[-1]
 
     optimal_initial_conditions = [optimal_s_0, optimal_e_0, optimal_i_0, optimal_r_0]
 
@@ -286,7 +288,8 @@ if __name__ == '__main__':
         plt.scatter(x_valid_prelock, valid_recovered, marker=marker, label='Validation', color=red)
         plt.plot(x_recovered_prelock, r_hat, label='Recovered - Predicted', color=blue)
         plt.scatter(x_train_prelock, known_recovered_exact_prelock, marker=marker, label='Training', color=green)
-        plt.scatter(x_train_postlock, known_recovered_exact_postlock, marker=marker, label='Post Lockdown', color='orange')
+        plt.scatter(x_train_postlock, known_recovered_exact_postlock, marker=marker, label='Post Lockdown',
+                    color='orange')
         plt.title('Comparison between real recovered and predicted recovered\n'
                   'Optimal E(0) = {:.6f} | I(0) = {:.6f} | R(0) = {:.6f} \n '
                   'Beta = {:.6f} | Gamma = {:.6f} | Lam = {:.6f} \n'.format(
@@ -337,5 +340,9 @@ if __name__ == '__main__':
         plt.tight_layout()
 
         plt.show()
+
+    plt.figure(figsize=(5, 5))
+    plt.plot(range(len(losses)), losses)
+    plt.show()
 
     print('MSE: {}'.format(min_loss))
