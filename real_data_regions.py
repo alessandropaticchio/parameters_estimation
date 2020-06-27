@@ -26,7 +26,6 @@ regions_populations = {'Abruzzo': 1311580,
                        'Veneto': 4905854}
 
 regions_to_fit = pd.read_csv(ROOT_DIR + '/real_data/regioni_to_fit.csv')
-regions_total = pd.read_csv(ROOT_DIR + '/real_data/regioni_total.csv')
 regions = regions_to_fit['denominazione_regione'].unique()
 
 regions_dict = {}

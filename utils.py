@@ -117,7 +117,6 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
     area_new_cases = data_dict[area][2][d:]
 
 
-
     # Rescale infected and removed between 0 and 1
     if scaled:
         area_infected = np.array(area_infected) / population
