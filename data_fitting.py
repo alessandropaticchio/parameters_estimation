@@ -7,7 +7,7 @@ from numpy.random import uniform
 
 
 def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, epochs=100, lr=8e-4, loss_mode='mse', n_batches=3,
-        susceptible_weight=1., exposed_weight=1.,
+        susceptible_weight=1., exposed_weight=1., infected_weight=1.,
         recovered_weight=1., force_init=False, verbose=False):
     model.eval()
 
@@ -101,7 +101,9 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
             else:
                 regularization = 0.
 
+            loss_i = loss_i * infected_weight
             loss_r = loss_r * recovered_weight
+
 
             batch_loss += loss_i + loss_r + regularization
 
