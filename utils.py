@@ -80,19 +80,21 @@ def generate_grid(t_0, t_final, size):
     return grid
 
 
-def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=True, skip_every=None, cut_off=1e-3, return_new_cases=False):
+def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=True, skip_every=None, cut_off=1e-3,
+                  multiplication_factor=1, return_new_cases=False, reducing_population=False):
     """
     :param area: name of the area where I want to extrapolate the data
     :param data_dict: dictionary that contains the data for a given area
     :param time_unit: time unit I want to use in my system. 1 unit = (1 / time_unit) days
     :param skip_every: if not None, data will be sampled once every skip_every days
+    :param multiplication_factor: total cases and recovered are multiplied by this factor
     :param cut_off: minimum amount of infected to start sampling
     :param return_new_cases: if True, it returns the trend of new cases
     :return: if return_new_cases is False, it returns a dictionary mapping t to [s(t), i(t), r(t)]
     """
 
-    if area in rescaling.keys():
-        population = populations[area] / rescaling[area]
+    if area in rescaling.keys() and reducing_population:
+        population = populations[area] * rescaling[area]
     else:
         population = populations[area]
 
@@ -103,7 +105,7 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
     # Select only the days whose infected go over the minimum cut off
     for_cut_off_checking = np.array(data_dict[area][0])
     if scaled:
-         for_cut_off_checking = for_cut_off_checking / population
+         for_cut_off_checking = for_cut_off_checking / populations[area]
 
     if cut_off == 0:
         d = 0
@@ -112,10 +114,18 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
             if i > cut_off:
                 break
 
-    area_infected = data_dict[area][0][d:]
-    area_removed = data_dict[area][1][d:]
+    area_infected = np.array(data_dict[area][0][d:])
+    area_removed = np.array(data_dict[area][1][d:])
     area_new_cases = data_dict[area][2][d:]
 
+    # Going from active cases to cumulated cases and rescaling by a given factor
+    area_infected = ((area_infected + area_removed) * multiplication_factor)
+
+    # Rescaling by a given factor
+    area_removed = area_removed * multiplication_factor
+
+    # Going back to active cases
+    area_infected = area_infected - area_removed
 
     # Rescale infected and removed between 0 and 1
     if scaled:

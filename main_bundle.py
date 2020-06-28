@@ -19,9 +19,9 @@ if __name__ == '__main__':
     t_final = 20
 
     # The intervals in which the equation parameters and the initial conditions should vary
-    i_0_set = [0.05, 0.15]
-    r_0_set = [0.01, 0.03]
-    betas = [0.45, 0.60]
+    i_0_set = [0.4, 0.6]
+    r_0_set = [0.1, 0.3]
+    betas = [0.45, 0.65]
     gammas = [0.05, 0.15]
 
     # Model parameters

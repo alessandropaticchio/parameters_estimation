@@ -114,7 +114,7 @@ selected_countries_populations = {'Italy': 60460000,
                                   'Sweden': 10230000,
                                   'New Zealand': 4886000}
 
-selected_countries_rescaling = {'Italy': 1}
+selected_countries_rescaling = {'Italy': 0.003}
 
 lockdown_ends = {'Italy': datetime.strptime('04/05/2020', '%d/%m/%Y'),
                  'Spain': datetime.strptime('04/05/2020', '%d/%m/%Y'),
