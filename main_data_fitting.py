@@ -24,23 +24,22 @@ if __name__ == '__main__':
     t_final = 20
 
     # The interval in which the equation parameters and the initial conditions should vary
-    e_0_set = [0.08, 0.1]
-    i_0_set = [0.01, 0.2]
+    i_0_set = [0.01, 0.02]
     r_0_set = [0.004, 0.009]
-    betas = [0.05, 0.08]
+    p_0_set = [0.9, 0.97]
+    betas = [0.4, 0.6]
     gammas = [0.05, 0.15]
-    lams = [0.02, 0.04]
 
     # Model parameters
     initial_conditions_set = []
     initial_conditions_set.append(t_0)
-    initial_conditions_set.append(e_0_set)
     initial_conditions_set.append(i_0_set)
     initial_conditions_set.append(r_0_set)
+    initial_conditions_set.append(p_0_set)
 
     # How many times I want to fit the trajectory, getting the best result
     n_trials = 1
-    fit_epochs = 10000
+    fit_epochs = 1000
     n_batches = 10
     fit_lr = 1e-4
 
@@ -52,51 +51,23 @@ if __name__ == '__main__':
     lr = 8e-4
 
     # Init model
-    seir = SIRNetwork(input=7, layers=4, hidden=50, output=4)
+    sirp = SIRNetwork(input=6, layers=4, hidden=50, output=4)
 
-    model_name = 'e_0={}_i_0={}_r_0={}_betas={}_gammas={}_lams={}.pt'.format(e_0_set, i_0_set, r_0_set,
-                                                                             betas,
-                                                                             gammas, lams)
+    model_name = 'i_0={}_r_0={}_p_0={}_betas={}_gammas={}.pt'.format(i_0_set, r_0_set, p_0_set,
+                                                                     betas,
+                                                                     gammas)
 
-    try:
-        # It tries to load the model, otherwise it trains it
-        checkpoint = torch.load(
-            ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
-    except FileNotFoundError:
-        # Train
-        optimizer = torch.optim.Adam(seir.parameters(), lr=lr)
-        writer = SummaryWriter('runs/{}'.format(model_name))
-        seir, train_losses, run_time, optimizer = train_bundle(seir, initial_conditions_set, t_final=t_final,
-                                                               epochs=epochs,
-                                                               num_batches=10, hack_trivial=hack_trivial,
-                                                               train_size=train_size, optimizer=optimizer,
-                                                               decay=decay, model_name=model_name,
-                                                               writer=writer, betas=betas, lams=lams,
-                                                               gammas=gammas)
-        # Save the model
-        torch.save({'model_state_dict': seir.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict()},
-                   ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
-
-        # Load the checkpoint
-        checkpoint = torch.load(
-            ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
+    checkpoint = torch.load(ROOT_DIR + '/models/SIRP_bundle_total/{}'.format(model_name))
 
     # Load the model
-    seir.load_state_dict(checkpoint['model_state_dict'])
-
-    writer_dir = 'runs/' + 'fitting_{}'.format(model_name)
-
-    # Check if the writer directory exists, if yes delete it and overwrite
-    if os.path.isdir(writer_dir):
-        rmtree(writer_dir)
-    writer = SummaryWriter(writer_dir)
+    sirp.load_state_dict(checkpoint['model_state_dict'])
 
     if mode == 'real':
         area = 'Italy'
         time_unit = 0.25
         cut_off = 1.5e-3
         multiplication_factor = 10
+
         # Real data prelockdown
         data_prelock = get_data_dict(area, data_dict=countries_dict_prelock, time_unit=time_unit,
                                      skip_every=1, cut_off=cut_off, populations=selected_countries_populations,
@@ -108,30 +79,33 @@ if __name__ == '__main__':
                                       multiplication_factor=multiplication_factor,
                                       rescaling=selected_countries_rescaling)
         susceptible_weight = 0.
-        exposed_weight = 0.
+        infected_weight = 1.
         recovered_weight = 1.
-        force_init = False
+        passive_weight = 0.
+        force_init = True
     else:
+        # TODO This part has to be fixed!
         # Synthetic data
         exact_e_0 = 0.1
         exact_i_0 = 0.2
         exact_r_0 = 0.3
         exact_beta = 0.9
         exact_gamma = 0.2
-        synthetic_data = get_syntethic_data(seir, t_final=t_final, e_0=exact_e_0, i_0=exact_i_0, r_0=exact_r_0,
+        synthetic_data = get_syntethic_data(sirp, t_final=t_final, e_0=exact_e_0, i_0=exact_i_0, r_0=exact_r_0,
                                             exact_beta=exact_beta,
                                             exact_gamma=exact_gamma,
                                             size=10, selection_mode='equally_spaced')
         susceptible_weight = 1.
-        susceptible_weight = 1.
+        infected_weight = 1.
         recovered_weight = 1.
+        passive_weight = 0.
         force_init = False
 
     # Generate validation set by taking the last time units
     valid_times = []
     valid_infected = []
     valid_recovered = []
-    train_val_split = 0.2
+    train_val_split = 0.05
     max_key = max(data_prelock.keys())
     keys = list(data_prelock.keys())
 
@@ -146,73 +120,52 @@ if __name__ == '__main__':
             del data_prelock[k]
 
     min_loss = 10000
-    loss_mode = 'mse'
 
     # Fit n_trials time and take the best fitting
     for i in range(n_trials):
         print('Fit no. {}\n'.format(i + 1))
-        e_0, i_0, r_0, beta, gamma, lam, rnd_init, losses = fit(seir,
-                                                                init_bundle=initial_conditions_set,
-                                                                betas=betas,
-                                                                gammas=gammas,
-                                                                lams=lams,
-                                                                steps=train_size, lr=fit_lr,
-                                                                known_points=data_prelock,
-                                                                writer=writer,
-                                                                loss_mode=loss_mode,
-                                                                epochs=fit_epochs,
-                                                                verbose=True,
-                                                                n_batches=n_batches,
-                                                                susceptible_weight=susceptible_weight,
-                                                                exposed_weight=exposed_weight,
-                                                                recovered_weight=recovered_weight,
-                                                                force_init=force_init)
-        s_0 = 1 - (e_0 + i_0 + r_0)
+        i_0, r_0, p_0, beta, gamma, losses = fit(sirp,
+                                                 init_bundle=initial_conditions_set,
+                                                 betas=betas,
+                                                 gammas=gammas,
+                                                 lr=fit_lr,
+                                                 known_points=data_prelock,
+                                                 mode=mode,
+                                                 epochs=fit_epochs,
+                                                 verbose=True,
+                                                 n_batches=n_batches,
+                                                 susceptible_weight=susceptible_weight,
+                                                 infected_weight=infected_weight,
+                                                 recovered_weight=recovered_weight,
+                                                 passive_weight=passive_weight,
+                                                 force_init=force_init)
+        s_0 = 1 - (i_0 + r_0 + p_0)
 
         if losses[-1] < min_loss:
-            optimal_s_0, optimal_e_0, optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma, optimal_lam = s_0, e_0, i_0, r_0, beta, gamma, lam
+            optimal_s_0, optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma = s_0, i_0, r_0, p_0, beta, gamma
             min_loss = losses[-1]
 
-    optimal_initial_conditions = [optimal_s_0, optimal_e_0, optimal_i_0, optimal_r_0]
+    optimal_initial_conditions = [optimal_s_0, optimal_i_0, optimal_r_0, optimal_p_0]
 
     # Let's save the predicted trajectories in the known points
     optimal_traj = []  # Solution of the network with the optimal found set of params
-
-    optimal_de = 0.
-    for t, v in data_prelock.items():
-        t_tensor = torch.Tensor([t]).reshape(-1, 1)
-        t_tensor.requires_grad = True
-
-        s_optimal, e_optimal, i_optimal, r_optimal = seir.parametric_solution(t_tensor, optimal_initial_conditions,
-                                                                              beta=optimal_beta,
-                                                                              gamma=optimal_gamma,
-                                                                              lam=optimal_lam)
-
-        optimal_de += sir_loss(t_tensor, s_optimal, e_optimal, i_optimal, r_optimal, optimal_beta, optimal_gamma,
-                               optimal_lam)
-        optimal_traj.append([s_optimal, i_optimal, r_optimal])
 
     # Generate points between 0 and t_final
     grid = torch.arange(0, t_final, out=torch.FloatTensor()).reshape(-1, 1)
     t_dl = DataLoader(dataset=grid, batch_size=1, shuffle=False)
     s_hat = []
-    e_hat = []
     i_hat = []
     r_hat = []
+    p_hat = []
+
     for i, t in enumerate(t_dl, 0):
         # Network solutions
-        s, e, i, r = seir.parametric_solution(t, optimal_initial_conditions, beta=optimal_beta, gamma=optimal_gamma,
-                                              lam=optimal_lam)
+        s, i, r, p = sirp.parametric_solution(t, optimal_initial_conditions, beta=optimal_beta, gamma=optimal_gamma)
+
         s_hat.append(s.item())
-        e_hat.append(e.item())
         i_hat.append(i.item())
         r_hat.append(r.item())
-
-    # Let's compute the MSE over all the known points, not only the subset used for training
-    traj_mse = 0.0
-
-    i_traj_real = []
-    r_traj_real = []
+        p_hat.append(p.item())
 
     # Validation
     if mode == 'real':
@@ -237,13 +190,11 @@ if __name__ == '__main__':
 
         x_new_cases = np.concatenate((x_train_prelock, x_valid_prelock, x_train_postlock))
 
-        traj_mse = traj_mse / len(valid_times)
+        infected_prelock = [traj[1] for traj in list(data_prelock.values())]
+        recovered_prelock = [traj[2] for traj in list(data_prelock.values())]
 
-        synthetic_infected = [traj[1] for traj in list(data_prelock.values())]
-        known_recovered_exact_prelock = [traj[2] for traj in list(data_prelock.values())]
-
-        known_infected_exact_postlock = [traj[1] for traj in list(data_postlock.values())]
-        known_recovered_exact_postlock = [traj[2] for traj in list(data_postlock.values())]
+        infected_postlock = [traj[1] for traj in list(data_postlock.values())]
+        recovered_postlock = [traj[2] for traj in list(data_postlock.values())]
 
         # Rescale everything to total population
         total_population = selected_countries_populations[area]
@@ -251,10 +202,10 @@ if __name__ == '__main__':
         r_hat = np.array(r_hat) * total_population
         valid_infected = np.array(valid_infected) * total_population
         valid_recovered = np.array(valid_recovered) * total_population
-        synthetic_infected = np.array(synthetic_infected) * total_population
-        known_infected_exact_postlock = np.array(known_infected_exact_postlock) * total_population
-        known_recovered_exact_prelock = np.array(known_recovered_exact_prelock) * total_population
-        known_recovered_exact_postlock = np.array(known_recovered_exact_postlock) * total_population
+        infected_prelock = np.array(infected_prelock) * total_population
+        infected_postlock = np.array(infected_postlock) * total_population
+        recovered_prelock = np.array(recovered_prelock) * total_population
+        recovered_postlock = np.array(recovered_postlock) * total_population
 
         plt.figure(figsize=(25, 8))
 
@@ -266,18 +217,19 @@ if __name__ == '__main__':
         marker = 'o'
         plt.scatter(x_valid_prelock, valid_infected, marker=marker, label='Validation', color=red)
         plt.plot(x_infected_prelock, i_hat, label='Infected Predicted', color=blue)
-        plt.scatter(x_train_prelock, synthetic_infected, marker=marker, label='Training', color=green)
-        plt.scatter(x_train_postlock, known_infected_exact_postlock, marker=marker, label='Post Lockdown', color=orange)
+        plt.scatter(x_train_prelock, infected_prelock, marker=marker, label='Training', color=green)
+        plt.scatter(x_train_postlock, infected_postlock, marker=marker, label='Post Lockdown', color=orange)
         # plt.bar(x_new_cases, new_cases, label='New Cases', color=magenta)
-        plt.title('Comparison between real infected and predicted infected\n'
-                  'Optimal E(0) = {:.6f} | I(0) = {:.6f} | R(0) = {:.6f} \n '
-                  'Beta = {:.6f} | Gamma = {:.6f} | Lam = {:.6f} \n'.format(
-            optimal_e_0.item(),
+        plt.title('Comparison between real recovered and predicted infected\n'
+                  'Optimal I(0) = {:.6f} | R(0) = {:.6f} | P(0) = {:.6f} | \n '
+                  'Beta = {:.6f} | Gamma = {:.6f} \n'.format(
+
             optimal_i_0.item(),
             optimal_r_0.item(),
+            optimal_p_0.item(),
             optimal_beta.item(),
             optimal_gamma.item(),
-            optimal_lam.item()), fontsize=labelsize)
+        ), fontsize=labelsize)
         plt.legend(loc='best')
         plt.xlabel('t (days)', fontsize=labelsize)
         plt.ylabel('I(t)', fontsize=labelsize)
@@ -287,18 +239,19 @@ if __name__ == '__main__':
         plt.subplot(1, 2, 2)
         plt.scatter(x_valid_prelock, valid_recovered, marker=marker, label='Validation', color=red)
         plt.plot(x_recovered_prelock, r_hat, label='Recovered - Predicted', color=blue)
-        plt.scatter(x_train_prelock, known_recovered_exact_prelock, marker=marker, label='Training', color=green)
-        plt.scatter(x_train_postlock, known_recovered_exact_postlock, marker=marker, label='Post Lockdown',
+        plt.scatter(x_train_prelock, recovered_prelock, marker=marker, label='Training', color=green)
+        plt.scatter(x_train_postlock, recovered_postlock, marker=marker, label='Post Lockdown',
                     color='orange')
         plt.title('Comparison between real recovered and predicted recovered\n'
-                  'Optimal E(0) = {:.6f} | I(0) = {:.6f} | R(0) = {:.6f} \n '
-                  'Beta = {:.6f} | Gamma = {:.6f} | Lam = {:.6f} \n'.format(
-            optimal_e_0.item(),
+                  'Optimal I(0) = {:.6f} | R(0) = {:.6f} | P(0) = {:.6f} | \n '
+                  'Beta = {:.6f} | Gamma = {:.6f} \n'.format(
+
             optimal_i_0.item(),
             optimal_r_0.item(),
+            optimal_p_0.item(),
             optimal_beta.item(),
             optimal_gamma.item(),
-            optimal_lam.item()), fontsize=labelsize)
+        ), fontsize=labelsize)
         plt.legend(loc='best')
         plt.xlabel('t (days)', fontsize=labelsize)
         plt.ylabel('R(t)', fontsize=labelsize)
@@ -313,7 +266,7 @@ if __name__ == '__main__':
         x_recovered = np.array(range(len(r_hat)))
         x_train = np.array(list(data_prelock.keys()))
         x_valid = np.array(valid_times)
-        synthetic_infected = [traj[1] for traj in list(data_prelock.values())]
+        infected_prelock = [traj[1] for traj in list(data_prelock.values())]
 
         title = 'Comparison between real data and predicted data\n' \
                 'Estimated vs Real\n' \
@@ -330,7 +283,7 @@ if __name__ == '__main__':
         plt.figure(figsize=(8, 5))
         plt.scatter(x_valid, valid_infected, label='Validation', color=red)
         plt.plot(x_infected, i_hat, label='Infected Predicted', color=blue)
-        plt.scatter(x_train, synthetic_infected, label='Training', color=green)
+        plt.scatter(x_train, infected_prelock, label='Training', color=green)
         plt.title(title)
         plt.legend(loc='best')
         plt.xlabel('t', fontsize=labelsize)

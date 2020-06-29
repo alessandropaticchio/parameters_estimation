@@ -70,7 +70,7 @@ class SIRNetwork(torch.nn.Module):
         return s_hat, i_hat, r_hat, p_hat
 
     # Use the model to provide a solution with a given set of initial conditions and parameters
-    def solve(self, i_0, r_0, p_0, beta, gamma, lam, t_0=0, t_final=20, size=20):
+    def solve(self, i_0, r_0, p_0, beta, gamma, t_0=0, t_final=20, size=20):
         s_0 = 1 - i_0 - r_0 - p_0
 
         # Test between 0 and t_final

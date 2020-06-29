@@ -19,9 +19,9 @@ if __name__ == '__main__':
     t_final = 20
 
     # The intervals in which the equation parameters and the initial conditions should vary
-    i_0_set = [0.01, 0.2]
+    i_0_set = [0.01, 0.02]
     r_0_set = [0.004, 0.009]
-    p_0_set = [0.9, 0.98]
+    p_0_set = [0.9, 0.97]
     betas = [0.4, 0.6]
     gammas = [0.05, 0.15]
 
@@ -42,8 +42,8 @@ if __name__ == '__main__':
     sirp = SIRNetwork(input=6, layers=4, hidden=50, output=4)
 
     model_name = 'i_0={}_r_0={}_p_0={}_betas={}_gammas={}.pt'.format(i_0_set, r_0_set, p_0_set,
-                                                              betas,
-                                                              gammas)
+                                                                     betas,
+                                                                     gammas)
     try:
         # It tries to load the model, otherwise it trains it
         checkpoint = torch.load(
@@ -95,14 +95,14 @@ if __name__ == '__main__':
     # Equation parameters
     beta = 0.55
     gamma = 0.1013
-    i_0 = 0.1
+    i_0 = 0.015
     r_0 = 0.005757
-    p_0 = 0.8
+    p_0 = 0.94
     s_0 = 1 - (i_0 + r_0 + p_0)
 
     # Scipy solver solution
     t = np.linspace(0, t_final, t_final)
-    s_p, e_p, i_p, r_p = SIRP_solution(t, s_0, i_0, r_0, p_0, beta, gamma)
+    s_p, i_p, r_p, p_p = SIRP_solution(t, s_0, i_0, r_0, p_0, beta, gamma)
 
     s_hat, i_hat, r_hat, p_hat, de_loss = sirp.solve(i_0=i_0, r_0=r_0, p_0=p_0, beta=beta, gamma=gamma, t_0=0, t_final=t_final)
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     plt.plot(range(len(i_hat)), i_hat, label='Infected', linestyle='-', color=red, linewidth=1.)
     plt.plot(range(len(r_hat)), r_hat, label='Recovered', linestyle='-', color=green, linewidth=1.)
     plt.title('Solving SIR model with Beta = {} | Gamma = {}\n'
-              'Starting conditions: S0 = {:.4f} | I0 = {:.4f} | R0 = {:.4f} | E0 = {:.4f}n \n'
+              'Starting conditions: S0 = {:.4f} | I0 = {:.4f} | R0 = {:.4f} | P0 = {:.4f} \n'
               'Model trained on bundle: I(0) in {} | R(0) in {} | P(0) in {} \n'
               'Beta in {} | Gamma in {}'.format(round(beta, 4),
                                                 round(gamma, 4),

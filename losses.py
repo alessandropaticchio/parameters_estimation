@@ -9,7 +9,7 @@ def sirp_loss(t, s, i, r, p, beta, gamma, decay=0):
     r_prime = dfx(t, r)
     p_prime = dfx(t, p)
 
-    N = 1
+    N = s_prime + i_prime + r_prime
 
     loss_s = s_prime + (beta * i * s) / N
     loss_i = i_prime - (beta * i * s) / N + gamma * i
@@ -30,6 +30,7 @@ def sirp_loss(t, s, i, r, p, beta, gamma, decay=0):
     total_loss = loss_s + loss_i + loss_r + loss_p
 
     return total_loss
+
 def seir_loss(t, s, e, i, r, beta, gamma, lam, decay=0):
     s_prime = dfx(t, s)
     e_prime = dfx(t, e)

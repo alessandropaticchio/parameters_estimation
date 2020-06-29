@@ -6,51 +6,45 @@ import numpy as np
 from numpy.random import uniform
 
 
-def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, epochs=100, lr=8e-4, loss_mode='mse', n_batches=3,
-        susceptible_weight=1., exposed_weight=1., infected_weight=1.,
-        recovered_weight=1., force_init=False, verbose=False):
+def fit(model, init_bundle, betas, gammas, known_points, epochs=100, lr=8e-4, mode='real', n_batches=3,
+        susceptible_weight=1., infected_weight=1.,
+        recovered_weight=1., passive_weight=1., force_init=False, verbose=False, writer=None):
+
     model.eval()
 
     # Sample randomly initial conditions, beta and gamma
-    e_0 = uniform(init_bundle[1][0], init_bundle[1][1], size=1)
-    i_0 = uniform(init_bundle[2][0], init_bundle[2][1], size=1)
-    r_0 = uniform(init_bundle[3][0], init_bundle[3][1], size=1)
+    i_0 = uniform(init_bundle[1][0], init_bundle[1][1], size=1)
+    r_0 = uniform(init_bundle[2][0], init_bundle[2][1], size=1)
+    p_0 = uniform(init_bundle[3][0], init_bundle[3][1], size=1)
     beta = uniform(betas[0], betas[1], size=1)
     gamma = uniform(gammas[0], gammas[1], size=1)
-    lam = uniform(lams[0], lams[1], size=1)
 
-    beta, gamma, lam = torch.Tensor([beta]).reshape(-1, 1), torch.Tensor([gamma]).reshape(-1, 1), torch.Tensor([lam]).reshape(-1, 1)
+    beta, gamma = torch.Tensor([beta]).reshape(-1, 1), torch.Tensor([gamma]).reshape(-1, 1)
 
     # if force_init == True fix the initial conditions as the ones given and find only the params
     if force_init:
         i_0 = known_points[0][1]
         r_0 = known_points[0][2]
-        e_0 = torch.Tensor([e_0]).reshape(-1, 1)
+        p_0 = torch.Tensor([p_0]).reshape(-1, 1)
         i_0 = torch.Tensor([i_0]).reshape(-1, 1)
         r_0 = torch.Tensor([r_0]).reshape(-1, 1)
-        optimizer = torch.optim.Adam([beta, gamma, lam, e_0], lr=lr)
+        optimizer = torch.optim.Adam([beta, gamma, p_0], lr=lr)
     else:
-        e_0 = torch.Tensor([e_0]).reshape(-1, 1)
         i_0 = torch.Tensor([i_0]).reshape(-1, 1)
         r_0 = torch.Tensor([r_0]).reshape(-1, 1)
-        optimizer = torch.optim.Adam([e_0, i_0, r_0, beta, gamma, lam], lr=lr)
+        p_0 = torch.Tensor([p_0]).reshape(-1, 1)
+        optimizer = torch.optim.Adam([beta, gamma, i_0, r_0, p_0], lr=lr)
 
-    # Learning rate scheduler
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=50)
-
-    s_0 = 1 - (e_0 + i_0 + r_0)
-
-    rnd_init = [round(e_0.item(), 5), round(i_0.item(), 5), round(r_0.item(), 5), round(beta.item(), 5),
-                round(gamma.item(), 5), round(lam.item(), 5)]
+    s_0 = 1 - (i_0 + r_0 + p_0)
 
     # Set requires_grad = True to the inputs to allow backprop
-    e_0.requires_grad = True
     i_0.requires_grad = True
     r_0.requires_grad = True
+    p_0.requires_grad = True
     beta.requires_grad = True
     gamma.requires_grad = True
 
-    initial_conditions = [s_0, e_0, i_0, r_0]
+    initial_conditions = [s_0, i_0, r_0, p_0]
 
     known_t = copy.deepcopy(list(known_points.keys()))
 
@@ -61,7 +55,6 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
     # Iterate for epochs to find best initial conditions, beta, and gamma that optimizes the MSE/Cross Entropy between
     # my prediction and the real data
     for epoch in tqdm(range(epochs), desc='Finding the best inputs', disable=not verbose):
-        optimizer.zero_grad()
 
         # Take the time points and shuffle them
         shuffle(known_t)
@@ -79,33 +72,34 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
 
             t_tensor = torch.Tensor([t]).reshape(-1, 1)
 
-            s_hat, e_hat, i_hat, r_hat = model.parametric_solution(t_tensor, initial_conditions, beta=beta, gamma=gamma,
-                                                                   lam=lam,
-                                                                   )
+            s_hat, i_hat, r_hat, p_hat = model.parametric_solution(t_tensor, initial_conditions, beta=beta, gamma=gamma)
 
-            i_target = target[1]
-            r_target = target[2]
 
-            if loss_mode == 'mse':
+
+            if mode == 'real':
+                i_target = target[1]
+                r_target = target[2]
                 loss_i = (i_target - i_hat).pow(2)
                 loss_r = (r_target - r_hat).pow(2)
-            elif loss_mode == 'cross_entropy':
-                loss_i = - i_target * torch.log(i_hat + 1e-10)
-                loss_r = - r_target * torch.log(r_hat + 1e-10)
+                loss_i = loss_i * infected_weight
+                loss_r = loss_r * recovered_weight
+                batch_loss += loss_i + loss_r
             else:
-                raise ValueError('Invalid loss specification!')
+                s_target = target[0]
+                i_target = target[1]
+                r_target = target[2]
+                p_target = target[3]
 
-            # Regularization term to prevent r_0 to go negative in extreme cases:
-            if loss_mode == 'cross_entropy':
-                regularization = torch.exp(-0.01 * r_0)
-            else:
-                regularization = 0.
+                loss_s = (s_target - s_hat).pow(2)
+                loss_i = (i_target - i_hat).pow(2)
+                loss_r = (r_target - r_hat).pow(2)
+                loss_p = (p_target - p_hat).pow(2)
 
-            loss_i = loss_i * infected_weight
-            loss_r = loss_r * recovered_weight
-
-
-            batch_loss += loss_i + loss_r + regularization
+                loss_s = loss_s * susceptible_weight
+                loss_i = loss_i * infected_weight
+                loss_r = loss_r * recovered_weight
+                loss_p = loss_p * passive_weight
+                batch_loss += loss_s + loss_i + loss_r + loss_p
 
             if batch_size == batch_filling:
                 # Weighting that regularizes how much we want to weight the Recovered/Susceptible curve
@@ -113,8 +107,9 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
                 batch_loss = batch_loss / len(known_points.keys())
                 epoch_loss += batch_loss
 
-                batch_loss.backward(retain_graph=True)
+                batch_loss.backward()
                 optimizer.step()
+                optimizer.zero_grad()
 
                 batch_filling = 0
                 batch_loss = 0.
@@ -126,8 +121,7 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
 
             batch_loss.backward(retain_graph=True)
             optimizer.step()
-
-        lr_scheduler.step()
+            optimizer.zero_grad()
 
         losses.append(epoch_loss)
 
@@ -136,14 +130,15 @@ def fit(model, init_bundle, betas, gammas, lams, known_points, steps, writer, ep
             r_0 = torch.clamp(r_0, 0, 10000)
 
         # Adjust s_0 after update of i_0 and r_0, and update initial_conditions
-        s_0 = 1 - (e_0 + i_0 + r_0)
-        initial_conditions = [s_0, e_0, i_0, r_0]
+        s_0 = 1 - (i_0 + r_0 + p_0)
+
+        initial_conditions = [s_0, i_0, r_0, p_0]
 
         if writer:
             writer.add_scalar('Loss/train', epoch_loss, epoch)
 
 
-    return e_0, i_0, r_0, beta, gamma, lam, rnd_init, losses
+    return i_0, r_0, p_0, beta, gamma, losses
 
 
 def cross_entropy(predictions, targets, epsilon=1e-12):
