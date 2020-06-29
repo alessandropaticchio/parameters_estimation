@@ -10,7 +10,7 @@ from utils import generate_dataloader, generate_grid
 from numpy.random import uniform
 
 
-def train_bundle(model, initial_conditions_set, t_final, epochs, train_size, optimizer, betas, gammas, lams, model_name,
+def train_bundle(model, initial_conditions_set, t_final, epochs, train_size, optimizer, betas, gammas, model_name,
                  decay=0, num_batches=1, hack_trivial=False,
                  treshold=float('-inf'), verbose=True, writer=None):
 
@@ -40,28 +40,26 @@ def train_bundle(model, initial_conditions_set, t_final, epochs, train_size, opt
 
         for i, t in enumerate(t_dataloader, 0):
             # Sample randomly initial conditions, beta and gamma
-            e_0 = uniform(initial_conditions_set[0][0], initial_conditions_set[0][1], size=batch_size)
-            i_0 = uniform(initial_conditions_set[1][0], initial_conditions_set[1][1], size=batch_size)
-            r_0 = uniform(initial_conditions_set[2][0], initial_conditions_set[2][1], size=batch_size)
+            i_0 = uniform(initial_conditions_set[0][0], initial_conditions_set[0][1], size=batch_size)
+            r_0 = uniform(initial_conditions_set[1][0], initial_conditions_set[1][1], size=batch_size)
+            p_0 = uniform(initial_conditions_set[2][0], initial_conditions_set[2][1], size=batch_size)
             beta = uniform(betas[0], betas[1], size=batch_size)
             gamma = uniform(gammas[0], gammas[1], size=batch_size)
-            lam = uniform(lams[0], lams[1], size=batch_size)
 
-            e_0 = torch.Tensor([e_0]).reshape((-1, 1))
             i_0 = torch.Tensor([i_0]).reshape((-1, 1))
             r_0 = torch.Tensor([r_0]).reshape((-1, 1))
+            p_0 = torch.Tensor([p_0]).reshape((-1, 1))
             beta = torch.Tensor([beta]).reshape((-1, 1))
             gamma = torch.Tensor([gamma]).reshape((-1, 1))
-            lam = torch.Tensor([lam]).reshape((-1, 1))
 
-            s_0 = 1 - (e_0 + i_0 + r_0)
-            initial_conditions = [s_0, e_0, i_0, r_0]
+            s_0 = 1 - (i_0 + r_0 + p_0)
+            initial_conditions = [s_0, i_0, r_0, p_0]
 
             #  Network solutions
-            s, e, i, r = model.parametric_solution(t, initial_conditions, beta, gamma, lam, mode='bundle_total')
+            s, i, r, p = model.parametric_solution(t, initial_conditions, beta, gamma)
 
             # Loss computation
-            batch_loss = seir_loss(t, s, e, i, r, beta=beta, gamma=gamma, lam=lam, decay=decay)
+            batch_loss = sirp_loss(t, s, i, r, p, beta=beta, gamma=gamma, decay=decay)
 
             # Hack to prevent the network from solving the equations trivially
             if hack_trivial:
@@ -92,7 +90,7 @@ def train_bundle(model, initial_conditions_set, t_final, epochs, train_size, opt
         if epoch % 500 == 0 and epoch != 0:
             torch.save({'model_state_dict': model.state_dict(),
                         'optimizer_state_dict': optimizer.state_dict()},
-                       ROOT_DIR + '/models/SEIR_bundle_total/{}'.format(model_name))
+                       ROOT_DIR + '/models/SIRP_bundle_total/{}'.format(model_name))
 
     final_time = time.time()
     run_time = final_time - start_time

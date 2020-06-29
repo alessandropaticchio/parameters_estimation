@@ -31,26 +31,28 @@ def generate_dataloader(grid, t_0, t_final, batch_size, perturb=True, shuffle=Tr
 ### MARIOS: SEIR MODEL
 
 # Use below in the Scipy Solver
-def f_seir(u, t, beta, gamma, lam):
-    s, e, i, r = u  # unpack current values of u
-    N = s + i + r + e
-    derivs = [-(beta * i * s) / N, (beta * i * s) / N - lam * e, lam * e - gamma * i,
-              gamma * i]  # list of dy/dt=f functions
+def f_sirp(u, t, beta, gamma):
+    s, i, r, p = u  # unpack current values of u
+
+    N = s + i + r
+
+    derivs = [-(beta * i * s) / N, (beta * i * s) / N - gamma * i, gamma * i, 0]  # list of dy/dt=f functions
 
     return derivs
 
 
 # Scipy Solver
-def SEIR_solution(t, s_0, e_0, i_0, r_0, beta, gamma, lam):
-    u_0 = [s_0, e_0, i_0, r_0]
+def SIRP_solution(t, s_0, i_0, r_0, p_0, beta, gamma):
+    u_0 = [s_0, i_0, r_0, p_0]
 
     # Call the ODE solver
-    sol_sir = odeint(f_seir, u_0, t, args=(beta, gamma, lam))
+    sol_sir = odeint(f_sirp, u_0, t, args=(beta, gamma))
     s = sol_sir[:, 0]
-    e = sol_sir[:, 1]
-    i = sol_sir[:, 2]
-    r = sol_sir[:, 3]
-    return s, e, i, r
+    i = sol_sir[:, 1]
+    r = sol_sir[:, 2]
+    p = sol_sir[:, 3]
+
+    return s, i, r, p
 
 
 ### END SEIR MODEL
@@ -90,20 +92,20 @@ def generate_grid(t_0, t_final, size):
 
 
 def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=True, skip_every=None, cut_off=1e-3,
-                  multiplication_factor=1, return_new_cases=False):
+                  multiplication_factor=1, return_new_cases=False, reducing_population=False):
     """
     :param area: name of the area where I want to extrapolate the data
     :param data_dict: dictionary that contains the data for a given area
     :param time_unit: time unit I want to use in my system. 1 unit = (1 / time_unit) days
     :param skip_every: if not None, data will be sampled once every skip_every days
-    :parmam multiplication factor: total cases and recovered are multiplied by this factor
+    :param multiplication_factor: total cases and recovered are multiplied by this factor
     :param cut_off: minimum amount of infected to start sampling
     :param return_new_cases: if True, it returns the trend of new cases
     :return: if return_new_cases is False, it returns a dictionary mapping t to [s(t), i(t), r(t)]
     """
 
-    if area in rescaling.keys():
-        population = populations[area] / rescaling[area]
+    if area in rescaling.keys() and reducing_population:
+        population = populations[area] * rescaling[area]
     else:
         population = populations[area]
 
@@ -114,7 +116,7 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
     # Select only the days whose infected go over the minimum cut off
     for_cut_off_checking = np.array(data_dict[area][0])
     if scaled:
-         for_cut_off_checking = for_cut_off_checking / population
+         for_cut_off_checking = for_cut_off_checking / populations[area]
 
     if cut_off == 0:
         d = 0
@@ -128,10 +130,10 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
     area_new_cases = data_dict[area][2][d:]
 
     # Going from active cases to cumulated cases and rescaling by a given factor
-    area_infected = ((area_infected + area_removed) * multiplication_factor )
+    area_infected = ((area_infected + area_removed) * multiplication_factor)
 
     # Rescaling by a given factor
-    area_removed =  area_removed * multiplication_factor
+    area_removed = area_removed * multiplication_factor
 
     # Going back to active cases
     area_infected = area_infected - area_removed
