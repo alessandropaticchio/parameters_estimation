@@ -17,11 +17,11 @@ if __name__ == '__main__':
     t_final = 20
 
     # The intervals in which the equation parameters and the initial conditions should vary
-    source_i_0_set = [0.01, 0.2]
+    source_i_0_set = [0.01, 0.02]
     source_r_0_set = [0.004, 0.009]
-    source_p_0_set = [0.08, 0.1]
-    source_betas = [0.05, 0.08]
-    source_gammas = [0.05, 0.15]
+    source_p_0_set = [0.9, 0.97]
+    source_betas = [0.5, 0.7]
+    source_gammas = [0.1, 0.2]
 
     # Model parameters
     initial_conditions_set = []
@@ -72,11 +72,11 @@ if __name__ == '__main__':
         checkpoint = torch.load(ROOT_DIR + '/models/SIRP_bundle_total/{}'.format(source_model_name))
 
     # Target model
-    target_i_0_set = [0.01, 0.2]
+    target_i_0_set = [0.01, 0.02]
     target_r_0_set = [0.004, 0.009]
-    target_p_0_set = [0.08, 0.1]
-    target_betas = [0.05, 0.08]
-    target_gammas = [0.05, 0.15]
+    target_p_0_set = [0.9, 0.97]
+    target_betas = [0.5, 0.7]
+    target_gammas = [0.25, 0.35]
 
     target_model_name = 'i_0={}_r_0={}_p_0={}_betas={}_gammas={}.pt'.format(target_i_0_set, target_r_0_set, target_p_0_set,
                                                               target_betas,
@@ -100,7 +100,7 @@ if __name__ == '__main__':
         initial_conditions_set.append(target_r_0_set)
         initial_conditions_set.append(target_p_0_set)
         optimizer = torch.optim.Adam(sirp.parameters(), lr=lr)
-        target_epochs = 1
+        target_epochs = 10000
         target_hack_trivial = 0
         target_train_size = 2000
         target_decay = 1e-3
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     t = np.linspace(0, t_final, t_final)
     s_p, e_p, i_p, r_p = SIRP_solution(t, s_0, i_0, r_0, p_0, beta, gamma)
 
-    s_hat, i_hat, r_hat, p_hat, de_loss = sirp.solve(i_0=i_0, r_0=r_0, p_0=p_0, beta=beta, gamma=gamma, lam=lam, t_0=0,
+    s_hat, i_hat, r_hat, p_hat, de_loss = sirp.solve(i_0=i_0, r_0=r_0, p_0=p_0, beta=beta, gamma=gamma, t_0=0,
                                                      t_final=t_final)
 
     # Plot network solutions

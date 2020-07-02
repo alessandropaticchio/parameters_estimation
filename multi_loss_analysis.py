@@ -49,7 +49,7 @@ if __name__ == '__main__':
         sir.load_state_dict(checkpoint['model_state_dict'])
         models.append(sir)
 
-    n_draws = 300
+    n_draws = 3
 
     # Will save the loss as a function of initial conditions
     init_losses = {}

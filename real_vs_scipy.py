@@ -1,31 +1,36 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import SIRP_solution, get_data_dict
-from real_data_countries import countries_dict_prelock, countries_dict_postlock, selected_countries_populations, selected_countries_rescaling
+from real_data_countries import countries_dict_prelock, countries_dict_postlock, selected_countries_populations, \
+    selected_countries_rescaling
 
 # Here I compare solution provided by Scipy with real data
 
 t_final = 20
 time_unit = 0.25
-area = 'Italy'
+area = 'Greece'
 scaled = True
+
+if scaled:
+    cut_off = 0.5e-4
+else:
+    cut_off = 20000
 
 multiplication_factor = 10
 
 # Both data will have the shape of a multidimensional array [S(t), I(t), R(t)]
-data_prelock = get_data_dict(area=area, data_dict=countries_dict_prelock, time_unit=time_unit, skip_every=0,
-                             cut_off=1.5e-3, scaled=scaled, populations=selected_countries_populations, rescaling=selected_countries_rescaling, multiplication_factor=multiplication_factor)
+data_prelock, cut_off_date = get_data_dict(area=area, data_dict=countries_dict_prelock, time_unit=time_unit, skip_every=0,
+                             cut_off=cut_off, scaled=scaled, populations=selected_countries_populations,
+                             rescaling=selected_countries_rescaling, multiplication_factor=multiplication_factor, return_cut_off_date=True)
 data_postlock = get_data_dict(area=area, data_dict=countries_dict_postlock, time_unit=time_unit, skip_every=0,
-                              cut_off=0., scaled=scaled, populations=selected_countries_populations, rescaling=selected_countries_rescaling, multiplication_factor=multiplication_factor)
+                              cut_off=0., scaled=scaled, populations=selected_countries_populations,
+                              rescaling=selected_countries_rescaling, multiplication_factor=multiplication_factor)
 
-infected_prelock = np.array([traj[1] for traj in list(data_prelock.values())])
-infected_postlock = np.array([traj[1] for traj in list(data_postlock.values())])
+infected_prelock = np.array([traj[0] for traj in list(data_prelock.values())])
+infected_postlock = np.array([traj[0] for traj in list(data_postlock.values())])
 
-
-recovered_prelock = np.array([traj[2] for traj in list(data_prelock.values())])
-recovered_postlock = np.array([traj[2] for traj in list(data_postlock.values())])
-
-
+recovered_prelock = np.array([traj[1] for traj in list(data_prelock.values())])
+recovered_postlock = np.array([traj[1] for traj in list(data_postlock.values())])
 
 # Total confirmed cases
 confirmed_prelock = infected_prelock + recovered_prelock
@@ -34,8 +39,8 @@ confirmed_postlock = infected_postlock + recovered_postlock
 x_postlock = np.array(list(data_postlock.keys())) + list(data_prelock.keys())[-1] + time_unit
 
 # Scipy solver solution
-beta = 0.5
-gamma = 0.2
+beta = 0.58
+gamma = 0.1
 
 # Fix the initial conditions as the first element of the infected and recovered data
 alpha = 0.964
@@ -50,9 +55,8 @@ else:
     s_0 = (1 - alpha) * (selected_countries_populations[area] - i_0 - r_0)
 
 # Solve the equation using Scipy
-t = np.linspace(0, t_final*4, t_final*4)
+t = np.linspace(0, t_final * 4, t_final * 4)
 s_p, i_p, r_p, p_p = SIRP_solution(t, s_0, i_0, r_0, p_0, beta, gamma)
-
 
 plt.figure(figsize=(15, 5))
 plt.title('Comparison of trend\n'
@@ -73,3 +77,5 @@ plt.xlabel('t')
 plt.ylabel('R(t)')
 
 plt.show()
+
+print('Cut off reached at {}'.format(cut_off_date))

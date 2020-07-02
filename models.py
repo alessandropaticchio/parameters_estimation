@@ -1,8 +1,8 @@
 from torch.nn.functional import softmax
 from torch.utils.data import DataLoader
-import torch
 from losses import sirp_loss
-
+import torch
+import numpy as np
 
 # Define the sin() activation function
 class mySin(torch.nn.Module):
@@ -70,7 +70,7 @@ class SIRNetwork(torch.nn.Module):
         return s_hat, i_hat, r_hat, p_hat
 
     # Use the model to provide a solution with a given set of initial conditions and parameters
-    def solve(self, i_0, r_0, p_0, beta, gamma, t_0=0, t_final=20, size=20):
+    def solve(self, i_0, r_0, p_0, beta, gamma, t_0=0, t_final=20, size=100):
         s_0 = 1 - i_0 - r_0 - p_0
 
         # Test between 0 and t_final
@@ -105,4 +105,6 @@ class SIRNetwork(torch.nn.Module):
 
             de_loss += sirp_loss(t, s, i, r, p, beta_t, gamma_t)
 
-        return s_hat, i_hat, r_hat, p_hat, de_loss
+        t = np.array([t.item() for t in grid.flatten()])
+
+        return s_hat, i_hat, r_hat, p_hat, de_loss, t

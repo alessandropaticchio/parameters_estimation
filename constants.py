@@ -1,10 +1,13 @@
 import torch
 import os
+from datetime import datetime
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
 dtype = torch.float
+
+data_start = datetime.strptime('22/1/2020', '%d/%m/%Y')
 
 green = '#009B07'
 orange = '#FE9441'

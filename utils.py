@@ -1,7 +1,9 @@
 import torch
 import numpy as np
+from datetime import timedelta
 from torch.utils.data import DataLoader
 from scipy.integrate import odeint
+from constants import *
 
 def perturb_points(grid, t_0, t_final, sig=0.5):
     # Stochastic perturbation of the evaluation points
@@ -59,15 +61,16 @@ def SIRP_solution(t, s_0, i_0, r_0, p_0, beta, gamma):
 
 
 # Function to sample synthetic data from a generic solution of a model
-def get_syntethic_data(model, t_final, i_0, r_0, exact_beta, exact_gamma, size):
+def get_syntethic_data(model, t_final, i_0, r_0, p_0, exact_beta, exact_gamma, size):
     model.eval()
 
-    s_0 = 1 - (i_0 + r_0)
+    s_0 = 1 - (i_0 + r_0 + p_0)
 
     # Generate tensors and get known points from the ground truth
     exact_initial_conditions = [torch.Tensor([s_0]).reshape(-1, 1),
                                 torch.Tensor([i_0]).reshape(-1, 1),
-                                torch.Tensor([r_0]).reshape(-1, 1)]
+                                torch.Tensor([r_0]).reshape(-1, 1), torch.Tensor([p_0]).reshape(-1, 1)]
+
     exact_beta = torch.Tensor([exact_beta]).reshape(-1, 1)
     exact_gamma = torch.Tensor([exact_gamma]).reshape(-1, 1)
 
@@ -78,11 +81,10 @@ def get_syntethic_data(model, t_final, i_0, r_0, exact_beta, exact_gamma, size):
     for t in rnd_t:
         t = torch.Tensor([t])
         t = t.reshape(-1, 1)
-        s_p, i_p, r_p = model.parametric_solution(t, exact_initial_conditions,
+        s_p, i_p, r_p, p_p = model.parametric_solution(t, exact_initial_conditions,
                                                   beta=exact_beta,
-                                                  gamma=exact_gamma,
-                                                  mode='bundle_total')
-        synthetic_data[t.item()] = [s_p.item(), i_p.item(), r_p.item()]
+                                                  gamma=exact_gamma,)
+        synthetic_data[t.item()] = [s_p.item(), i_p.item(), r_p.item(), p_p.item()]
 
     return synthetic_data
 
@@ -92,7 +94,7 @@ def generate_grid(t_0, t_final, size):
 
 
 def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=True, skip_every=None, cut_off=1e-3,
-                  multiplication_factor=1, return_new_cases=False, reducing_population=False):
+                  multiplication_factor=1, return_new_cases=False, reducing_population=False, return_cut_off_date=False):
     """
     :param area: name of the area where I want to extrapolate the data
     :param data_dict: dictionary that contains the data for a given area
@@ -129,6 +131,9 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
     area_removed = np.array(data_dict[area][1][d:])
     area_new_cases = data_dict[area][2][d:]
 
+    # Get in what day the population reached the cut off
+    cut_off_day = data_start + timedelta(days=d)
+
     # Going from active cases to cumulated cases and rescaling by a given factor
     area_infected = ((area_infected + area_removed) * multiplication_factor)
 
@@ -147,10 +152,7 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
 
     for i in range(len(area_infected)):
         times.append(i * time_unit)
-        if scaled:
-            traj[i * time_unit] = [1 - (area_infected[i] + area_removed[i]), area_infected[i], area_removed[i]]
-        else:
-            traj[i * time_unit] = [population - (area_infected[i] + area_removed[i]), area_infected[i], area_removed[i]]
+        traj[i * time_unit] = [area_infected[i], area_removed[i]]
 
     # If I don't want to select contiguous day, I will get just a subset
     if skip_every:
@@ -163,4 +165,7 @@ def get_data_dict(area, data_dict, time_unit, populations, rescaling, scaled=Tru
     if return_new_cases:
         return times, area_new_cases
     else:
-        return traj
+        if return_cut_off_date:
+            return traj, cut_off_day
+        else:
+            return traj
