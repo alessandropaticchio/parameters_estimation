@@ -11,6 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 from matplotlib.patches import Rectangle
+plt.rcParams["font.family"] = "serif"
+plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
 # File to analyze the trend of the loss as a function of initial conditions and parameters,
 # within and outside the bundle, in this case by using 5 different models trained on the same bundle.
@@ -156,13 +158,13 @@ if __name__ == '__main__':
     plt.rcParams['axes.ymargin'] = 0
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
-    style.use('ggplot')
 
-    plt.figure(figsize=(10, 10))
+    plt.figure(figsize=(20, 10))
+    plt.subplot(1, 2, 1)
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)
-    plt.xlabel('I(0)', fontsize=25)
-    plt.ylabel('R(0)', fontsize=25)
+    plt.xlabel('$I(0)$', fontsize=25)
+    plt.ylabel('$R(0)$', fontsize=25)
     if within_bundle:
         plt.tricontourf(i_0_sampled, r_0_sampled, log_inits_losses,
                         cmap=nlcmap(plt.cm.YlGn_r, levels=[1, 2, 2.1, 2.2, 2.3, 2.4, 3]))
@@ -176,15 +178,14 @@ if __name__ == '__main__':
     plt.ylim(max(0, r_0_set[0] - r_0_std/3), max(0, r_0_set[1] + r_0_std/3))
     clb = plt.colorbar(ticks=[-3, -4, -5, -6, -7, -8, -9, -10, -11, -12])
     clb.ax.tick_params(labelsize=18)
-    clb.set_label('Log(L)', labelpad=-45, y=1.05, rotation=0, fontsize=18)
+    clb.set_label('$\mathit{Log(L)}$', labelpad=-45, y=1.05, rotation=0, fontsize=22)
     # plt.show()
-
-    plt.figure(figsize=(10, 10))
+    plt.subplot(1, 2, 2)
 
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)
-    plt.xlabel('β', fontsize=25)
-    plt.ylabel('γ', fontsize=25)
+    plt.xlabel(r'$\beta$', fontsize=25)
+    plt.ylabel(r'$\gamma$', fontsize=25)
     if within_bundle:
         plt.tricontourf(beta_sampled, gamma_sampled, log_params_losses,
                         cmap=nlcmap(plt.cm.YlGn_r, levels=[1, 2, 2.1, 2.2, 2.3, 2.4, 3]))
@@ -197,5 +198,5 @@ if __name__ == '__main__':
     plt.ylim(max(0, gammas[0] - gammas_std/3), max(0, gammas[1] + gammas_std/3))
     clb = plt.colorbar(ticks=[-3, -4, -5, -6, -7, -8, -9, -10, -11, -12])
     clb.ax.tick_params(labelsize=18)
-    clb.set_label('Log(L)', labelpad=-45, y=1.05, rotation=0, fontsize=18)
+    clb.set_label('$\mathit{Log(L)}$', labelpad=-45, y=1.05, rotation=0, fontsize=22)
     plt.show()
