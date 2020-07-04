@@ -15,19 +15,23 @@ from torch.utils.tensorboard import SummaryWriter
 from shutil import rmtree
 from tqdm import tqdm
 
+plt.rcParams["font.family"] = "serif"
+plt.rcParams["mathtext.fontset"] = "dejavuserif"
+
 if __name__ == '__main__':
-    plt.gca().spines['top'].set_visible(False)
-    plt.gca().spines['right'].set_visible(False)
-    style.use('ggplot')
 
     t_0 = 0
     t_final = 20
 
     # Compute the interval in which the equation parameters and the initial conditions should vary
-    betas = [0.8, 1.0]
-    gammas = [0., 0.3]
     i_0_set = [0.2, 0.4]
     r_0_set = [0.1, 0.3]
+    betas = [0., 0.4]
+    gammas = [0.4, 0.7]
+    # i_0_set = [0.4, 0.6]
+    # r_0_set = [0.1, 0.3]
+    # betas = [0.45, 0.65]
+    # gammas = [0.05, 0.15]
     initial_conditions_set = []
     initial_conditions_set.append(t_0)
     initial_conditions_set.append(i_0_set)
@@ -39,7 +43,14 @@ if __name__ == '__main__':
     hack_trivial = False
     epochs = 3000
     lr = 8e-4
-    sigma = 0
+
+    # How many solutions I want to generate
+    n_draws = 10
+
+    # How many times I want to fit a single trajectory, getting the best result
+    n_trials = 1
+
+    fit_epochs = 1000
 
     # Init model
     sir = SIRNetwork(input=5, layers=4, hidden=50)
@@ -89,69 +100,88 @@ if __name__ == '__main__':
     if mode == 'real':
         time_unit = 0.25
         area = 'US'
-        exact_points = get_data_dict(area, data_dict=countries_dict_prelock, time_unit=time_unit, skip_every=0,
+        data_prelock = get_data_dict(area, data_dict=countries_dict_prelock, time_unit=time_unit, skip_every=0,
                                      cut_off=1.5e-3, populations=selected_countries_populations)
 
         # If I'm fitting real data, I only fit Infected.
         # I also know the initial condition of I, so I can force it.
         susceptible_weight = 0.
+        infected_weight = 1.
         recovered_weight = 0.
         force_init = True
     else:
         # Synthetic data
-        exact_i_0 = 0.2
-        exact_r_0 = 0.3
-        exact_beta = 0.9
-        exact_gamma = 0.2
-        exact_points = get_syntethic_data(sir, t_final=t_final, i_0=exact_i_0, r_0=exact_r_0, exact_beta=exact_beta,
+        exact_i_0 = 0.25
+        exact_r_0 = 0.15
+        exact_beta = 0.2
+        exact_gamma = 0.5
+        # exact_i_0 = 0.5
+        # exact_r_0 = 0.2
+        # exact_beta = 0.55
+        # exact_gamma = 0.1
+        data_prelock = get_syntethic_data(sir, t_final=t_final, i_0=exact_i_0, r_0=exact_r_0, exact_beta=exact_beta,
                                           exact_gamma=exact_gamma,
-                                          size=10)
+                                          size=20)
         susceptible_weight = 1.
+        infected_weight = 1.
         recovered_weight = 1.
         force_init = False
 
-    # Generate validation set by taking the last time units
+    validation_data = {}
     valid_times = []
     valid_infected = []
     valid_recovered = []
     train_val_split = 0.2
-    max_key = max(exact_points.keys())
-    keys = list(exact_points.keys())
-
-    for k in keys:
-        if train_val_split == 0.:
-            break
-
-        if k >= max_key * (1 - train_val_split):
-            valid_times.append(k)
-            valid_infected.append(exact_points[k][1])
-            valid_recovered.append(exact_points[k][2])
-            del exact_points[k]
-
-    # How many solutions I want to generate
-    n_draws = 2
-
-    # How many times I want to fit a single trajectory, getting the best result
-    n_trials = 2
-
-    fit_epochs = 100
 
     if mode == 'real':
-        N_total = selected_countries_populations[area]
+        # Generate validation set by taking the last time units
+        max_key = max(data_prelock.keys())
+        val_keys = list(data_prelock.keys())
+
+        for k in val_keys:
+            if train_val_split == 0.:
+                break
+
+            if k >= max_key * (1 - train_val_split):
+                valid_times.append(k)
+                valid_infected.append(data_prelock[k][1])
+                valid_recovered.append(data_prelock[k][2])
+                validation_data[k] = [data_prelock[k][0], data_prelock[k][1], data_prelock[k][2]]
+                del data_prelock[k]
+
     else:
-        N_total = 10e6
+        # Generate validation set
+        max_key = max(data_prelock.keys())
+        step = int(1 / train_val_split)
+        val_keys = list(data_prelock.keys())[1::step]
+
+        for k in val_keys:
+            if train_val_split == 0.:
+                break
+
+            valid_times.append(k)
+            valid_infected.append(data_prelock[k][1])
+            valid_recovered.append(data_prelock[k][2])
+            validation_data[k] = [data_prelock[k][0], data_prelock[k][1], data_prelock[k][2]]
+            del data_prelock[k]
+
+    if mode == 'real':
+        total_population = selected_countries_populations[area]
+    else:
+        total_population = 10e6
 
     optimal_set = []
 
     loss_mode = 'mse'
+    n_batches = 4
 
     for i in tqdm(range(n_draws), desc='Fitting...'):
-        exact_points_tmp = copy.deepcopy(exact_points)
+        exact_points_tmp = copy.deepcopy(data_prelock)
         min_loss = 1000
 
         # Inject some noise in the infected. Noise is gaussian noise with mean 0 and std=(sqrt(Infected(t)) * N_total ) / N_total
         for t, v in exact_points_tmp.items():
-            scale = np.sqrt((v[1] * N_total)) / N_total
+            scale = np.sqrt((v[1] * total_population)) / total_population
             noise = np.random.normal(loc=0, scale=scale)
             noisy_infected = v[1] + noise
             exact_points_tmp[t] = [1 - (noisy_infected + v[2]), noisy_infected, v[2]]
@@ -159,25 +189,29 @@ if __name__ == '__main__':
         # Fit n_trials time and take the best fitting
         for j in range(n_trials):
             # Search optimal params
-            optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma, rnd_init, traj_mse = fit(sir,
-                                                                                            init_bundle=initial_conditions_set,
-                                                                                            betas=betas,
-                                                                                            gammas=gammas,
-                                                                                            steps=train_size,
-                                                                                            lr=1e-2,
-                                                                                            known_points=exact_points_tmp,
-                                                                                            writer=writer,
-                                                                                            epochs=fit_epochs,
-                                                                                            loss_mode=loss_mode,
-                                                                                            susceptible_weight=0.,
-                                                                                            recovered_weight=0.,
-                                                                                            force_init=True
-                                                                                            )
+            optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma, val_losses = fit(sir,
+                                                                                    init_bundle=initial_conditions_set,
+                                                                                    betas=betas,
+                                                                                    gammas=gammas,
+                                                                                    lr=1e-1,
+                                                                                    known_points=data_prelock,
+                                                                                    writer=writer,
+                                                                                    loss_mode=loss_mode,
+                                                                                    epochs=fit_epochs,
+                                                                                    verbose=False,
+                                                                                    n_batches=n_batches,
+                                                                                    susceptible_weight=susceptible_weight,
+                                                                                    recovered_weight=recovered_weight,
+                                                                                    infected_weight=infected_weight,
+                                                                                    force_init=force_init,
+                                                                                    validation_data=validation_data)
+            s_0 = 1 - (optimal_i_0 + optimal_r_0)
 
             optimal_s_0 = 1 - (optimal_i_0 + optimal_r_0)
-            if traj_mse <= min_loss:
+
+            if val_losses[-1] <= min_loss:
                 optimal_subset = [optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma]
-                min_loss = traj_mse
+                min_loss = val_losses[-1]
 
         optimal_set.append(optimal_subset)
 
@@ -219,11 +253,11 @@ if __name__ == '__main__':
 
     # Summarize the solutions with their means and std deviations
 
-    i_0_mean = np.mean(optimal_i_0s)
-    i_0_std = np.std(optimal_i_0s)
+    i_0_mean = np.mean(optimal_i_0s) * total_population
+    i_0_std = np.std(optimal_i_0s) * total_population
 
-    r_0_mean = np.mean(optimal_r_0s)
-    r_0_std = np.std(optimal_r_0s)
+    r_0_mean = np.mean(optimal_r_0s) * total_population
+    r_0_std = np.std(optimal_r_0s) * total_population
 
     betas_mean = np.mean(optimal_betas)
     betas_std = np.std(optimal_betas)
@@ -231,16 +265,19 @@ if __name__ == '__main__':
     gammas_mean = np.mean(optimal_gammas)
     gammas_std = np.std(optimal_gammas)
 
-    infected_mean = np.mean(overall_infected, axis=0)
-    infected_std = np.std(overall_infected, axis=0)
+    infected_mean = np.mean(overall_infected, axis=0) * total_population
+    infected_std = np.std(overall_infected, axis=0) * total_population
 
-    recovered_mean = np.mean(overall_recovered, axis=0)
-    recovered_std = np.std(overall_recovered, axis=0)
+    recovered_mean = np.mean(overall_recovered, axis=0) * total_population
+    recovered_std = np.std(overall_recovered, axis=0) * total_population
 
-    noise_std = [2 * np.sqrt((v[1] * N_total)) / N_total for v in exact_points.values()]
+    noise_std = [2 * np.sqrt((v[1] * total_population)) for v in data_prelock.values()]
 
-    known_infected_exact = [traj[1] for traj in list(exact_points.values())]
-    known_recovered_exact = [traj[2] for traj in list(exact_points.values())]
+    known_infected_prelock = np.array([traj[1] for traj in list(data_prelock.values())]) * total_population
+    known_recovered_prelock = np.array([traj[2] for traj in list(data_prelock.values())]) * total_population
+
+    valid_infected = np.array(valid_infected) * total_population
+    valid_recovered = np.array(valid_recovered) * total_population
 
     fig = plt.figure(figsize=(15, 5))
     marker = '.'
@@ -248,7 +285,7 @@ if __name__ == '__main__':
     x_infected = np.array(range(len(infected_mean)))
     x_recovered = np.array(range(len(recovered_mean)))
 
-    x_train = np.array(list(exact_points.keys()))
+    x_train = np.array(list(data_prelock.keys()))
     x_valid = np.array(valid_times)
 
     if mode == 'real':
@@ -257,18 +294,17 @@ if __name__ == '__main__':
         x_train = x_train / time_unit
         x_valid = x_valid / time_unit
 
-
     title = 'Comparison between real data and predicted data\n' \
             'Estimated vs Real\n' \
             'I(0) = {:.6f} +- {:.3f} - {:.6f} \n R(0) = {:.6f}  +- {:.3f} -  {:.6f}\n' \
             'Beta = {:.6f} +- {:.3f} - {:.6f} \n Gamma = {:.6f}  +- {:.3f} - {:.6f}\n'.format(i_0_mean, i_0_std,
-                                                                                             exact_i_0,
-                                                                                             r_0_mean, r_0_std,
-                                                                                             exact_r_0,
-                                                                                             betas_mean, betas_std,
-                                                                                             exact_beta,
-                                                                                             gammas_mean, gammas_std,
-                                                                                             exact_gamma)
+                                                                                              exact_i_0,
+                                                                                              r_0_mean, r_0_std,
+                                                                                              exact_r_0,
+                                                                                              betas_mean, betas_std,
+                                                                                              exact_beta,
+                                                                                              gammas_mean, gammas_std,
+                                                                                              exact_gamma)
 
     plt.figure(figsize=(8, 5))
 
@@ -276,17 +312,30 @@ if __name__ == '__main__':
     ax1 = plt.gca()
     ax1.xaxis.set_tick_params(labelsize=ticksize)
     ax1.yaxis.set_tick_params(labelsize=ticksize)
-    ax1.plot(x_infected, infected_mean, label='Predicted', color=blue)
+    ax1.plot(x_infected, infected_mean, label='Infected - Predicted', color=blue)
     ax1.fill_between(x=x_infected, y1=infected_mean + 2 * infected_std,
                      y2=infected_mean - 2 * infected_std, alpha=0.3, color=blue)
-    ax1.errorbar(x=x_train, y=known_infected_exact, yerr=noise_std, label='Training points', color=green,
-                 fmt=marker)
     ax1.scatter(x_valid, valid_infected, label='Validation points', color=red, marker=marker)
+    ax1.errorbar(x=x_train, y=known_infected_prelock, yerr=noise_std, label='Training points', color=green,
+                 fmt=marker)
     ax1.legend(loc='best')
-    ax1.set_xlabel('t', fontsize=labelsize)
-    ax1.set_ylabel('I(t)', fontsize=labelsize)
 
+    ax1.set_xlabel('$t$', fontsize=labelsize)
+    ax1.set_ylabel('$I(t)$', fontsize=labelsize)
+
+    handles, labels = ax1.get_legend_handles_labels()
+    handles = [handles[0], handles[2], handles[1]]
+    labels = [labels[0], labels[2], labels[1]]
+
+    ax1.legend(handles, labels, loc='best')
+
+    plt.xticks(fontsize=ticksize / 1.5)
+    plt.yticks(fontsize=ticksize / 1.5)
     plt.tight_layout()
+
+    ts = datetime.datetime.now().timestamp()
+
+    plt.savefig(ROOT_DIR + '/plots/sensitivity_val_{}.png'.format(ts))
 
     plt.figure(figsize=(8, 5))
     plt.title(title)
@@ -296,18 +345,17 @@ if __name__ == '__main__':
     ax2.plot(x_recovered, recovered_mean, label='Predicted', color=blue)
     ax2.fill_between(x=x_recovered, y1=recovered_mean + 2 * recovered_std,
                      y2=recovered_mean - 2 * recovered_std, alpha=0.3, color=blue)
-    ax2.scatter(x=x_train, y=known_recovered_exact, label='Training points',
+    ax2.scatter(x=x_train, y=known_recovered_prelock, label='Training points',
                 color=green, marker=marker)
     ax2.scatter(x_valid, valid_recovered, label='Validation points', color=red, marker=marker)
     ax2.legend(loc='best')
-    ax2.set_xlabel('t', fontsize=labelsize)
-    ax2.set_ylabel('R(t)', fontsize=labelsize)
+    ax2.set_xlabel('$t$', fontsize=labelsize)
+    ax2.set_ylabel('$R(t)$', fontsize=labelsize)
 
+    plt.xticks(fontsize=ticksize / 1.5)
+    plt.yticks(fontsize=ticksize / 1.5)
     plt.tight_layout()
 
-    ts = datetime.datetime.now().timestamp()
-
-    plt.savefig(ROOT_DIR + '/plots/sensitivity_val_{}.png'.format(ts))
     plt.show()
 
     if n_draws == 1:

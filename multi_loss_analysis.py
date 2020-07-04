@@ -78,7 +78,7 @@ if __name__ == '__main__':
         s_0 = 1 - (i_0 + r_0)
 
         # Generate points between 0 and t_final
-        grid = torch.arange(0, t_final, out=torch.FloatTensor()).reshape(-1, 1)
+        grid = torch.linspace(t_0, t_final, 20000).reshape(-1, 1)
         t_dl = DataLoader(dataset=grid, batch_size=1, shuffle=False)
 
         s_0 = torch.Tensor([s_0]).reshape(-1, 1)

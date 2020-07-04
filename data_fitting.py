@@ -5,8 +5,8 @@ import copy
 import numpy as np
 from numpy.random import uniform
 
-def fit(model, init_bundle, betas, gammas, known_points, steps, writer, epochs=100, lr=8e-4, loss_mode='mse',
-        susceptible_weight=1.,
+def fit(model, init_bundle, betas, gammas, known_points, validation_data, writer, epochs=100, lr=8e-4, loss_mode='mse',
+        susceptible_weight=1., infected_weight=1., n_batches=2,
         recovered_weight=1., force_init=False, verbose=False):
     model.eval()
 
@@ -31,8 +31,6 @@ def fit(model, init_bundle, betas, gammas, known_points, steps, writer, epochs=1
 
     s_0 = 1 - (i_0 + r_0)
 
-    rnd_init = [round(i_0.item(), 5), round(r_0.item(), 5), round(beta.item(), 5), round(gamma.item(), 5)]
-
     # Set requires_grad = True to the inputs to allow backprop
     i_0.requires_grad = True
     r_0.requires_grad = True
@@ -43,25 +41,34 @@ def fit(model, init_bundle, betas, gammas, known_points, steps, writer, epochs=1
 
     known_t = copy.deepcopy(list(known_points.keys()))
 
-    losses = []
+    batch_size = int(len(known_t) / n_batches)
+
+    train_losses = []
+    val_losses = []
+
 
     # Iterate for epochs to find best initial conditions, beta, and gamma that optimizes the MSE/Cross Entropy between
     # my prediction and the real data
     for epoch in tqdm(range(epochs), desc='Finding the best inputs', disable=not verbose):
         optimizer.zero_grad()
 
-        loss = 0.
+
+        batch_filling = 0.
+
+        epoch_loss = 0.
+        batch_loss = 0.
 
         # Take the time points and shuffle them
         shuffle(known_t)
 
         for t in known_t:
+            batch_filling += 1
+
             target = known_points[t]
 
             t_tensor = torch.Tensor([t]).reshape(-1, 1)
 
-            s_hat, i_hat, r_hat = model.parametric_solution(t_tensor, initial_conditions, beta=beta, gamma=gamma,
-                                                            mode='bundle_total')
+            s_hat, i_hat, r_hat = model.parametric_solution(t_tensor, initial_conditions, beta=beta, gamma=gamma)
 
             s_target = target[0]
             i_target = target[1]
@@ -85,16 +92,35 @@ def fit(model, init_bundle, betas, gammas, known_points, steps, writer, epochs=1
                 regularization = 0.
 
             # Weighting that regularizes how much we want to weight the Recovered/Susceptible curve
-            loss_r = loss_r * recovered_weight
             loss_s = loss_s * susceptible_weight
+            loss_i = loss_i * infected_weight
+            loss_r = loss_r * recovered_weight
 
-            loss += loss_s + loss_i + loss_r + regularization
+            batch_loss += loss_s + loss_i + loss_r + regularization
 
-        loss = loss / len(known_points.keys())
-        losses.append(loss)
+            if batch_size == batch_filling:
+                # Weighting that regularizes how much we want to weight the Recovered/Susceptible curve
 
-        loss.backward(retain_graph=True)
-        optimizer.step()
+                batch_loss = batch_loss / len(known_points.keys())
+                epoch_loss += batch_loss
+
+                batch_loss.backward(retain_graph=True)
+                optimizer.step()
+                optimizer.zero_grad()
+
+                batch_filling = 0
+                batch_loss = 0.
+
+        # For the last batch
+        if batch_filling != 0:
+            batch_loss = batch_loss / len(known_points.keys())
+            epoch_loss += batch_loss
+
+            batch_loss.backward(retain_graph=True)
+            optimizer.step()
+            optimizer.zero_grad()
+
+        train_losses.append(epoch_loss)
 
         # To prevent r_0 to go negative in extreme cases:
         if r_0 < 0.:
@@ -105,9 +131,35 @@ def fit(model, init_bundle, betas, gammas, known_points, steps, writer, epochs=1
         initial_conditions = [s_0, i_0, r_0]
 
         if writer:
-            writer.add_scalar('Loss/train', loss, epoch)
+            writer.add_scalar('Loss/train', epoch_loss, epoch)
 
-    return i_0, r_0, beta, gamma, rnd_init, losses[-1]
+        # Validation loss
+        val_loss = 0.
+        for idx, t in enumerate(validation_data):
+
+            target = validation_data[t]
+
+            t_tensor = torch.Tensor([t]).reshape(-1, 1)
+
+            s_hat, i_hat, r_hat = model.parametric_solution(t_tensor, initial_conditions, beta=beta,
+                                                                   gamma=gamma)
+            s_target = target[0]
+            i_target = target[1]
+            r_target = target[2]
+
+            loss_s = (s_target - s_hat).pow(2)
+            loss_i = (i_target - i_hat).pow(2)
+            loss_r = (r_target - r_hat).pow(2)
+
+            loss_s = loss_s * susceptible_weight
+            loss_i = loss_i * infected_weight
+            loss_r = loss_r * recovered_weight
+            val_loss += loss_s + loss_i + loss_r
+
+        val_losses.append(val_loss)
+
+
+    return i_0, r_0, beta, gamma, val_losses
 
 
 def cross_entropy(predictions, targets, epsilon=1e-12):

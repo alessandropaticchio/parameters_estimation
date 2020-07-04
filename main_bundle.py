@@ -19,10 +19,11 @@ if __name__ == '__main__':
     t_final = 20
 
     # The intervals in which the equation parameters and the initial conditions should vary
-    i_0_set = [0.4, 0.6]
+    i_0_set = [0.2, 0.4]
     r_0_set = [0.1, 0.3]
-    betas = [0.45, 0.65]
-    gammas = [0.05, 0.15]
+    betas = [0., 0.4]
+    gammas = [0.4, 0.7]
+
 
     # Model parameters
     initial_conditions_set = []
@@ -91,10 +92,10 @@ if __name__ == '__main__':
 
 
     # Equation parameters
-    beta = 0.55
-    gamma = 0.1
-    i_0 = 0.1
-    r_0 = 0.03
+    beta = 0.
+    gamma = 0.6
+    i_0 = 0.3
+    r_0 = 0.2
     s_0 = 1 - (i_0 + r_0)
 
     # Scipy solver solution
