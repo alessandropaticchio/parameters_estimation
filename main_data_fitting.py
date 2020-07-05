@@ -27,11 +27,19 @@ if __name__ == '__main__':
     # betas = [0.7, 0.9]
     # gammas = [0.15, 0.3]
 
+    # Spain
     i_0_set = [0.01, 0.02]
     r_0_set = [0.004, 0.009]
     p_0_set = [0.9, 0.97]
     betas = [0.4, 0.6]
     gammas = [0.1, 0.2]
+
+    # Italy
+    # i_0_set = [0.01, 0.02]
+    # r_0_set = [0.004, 0.009]
+    # p_0_set = [0.9, 0.97]
+    # betas = [0.4, 0.6]
+    # gammas = [0.1, 0.2]
 
     # Model parameters
     initial_conditions_set = []
