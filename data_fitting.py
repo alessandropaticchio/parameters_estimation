@@ -45,6 +45,7 @@ def fit(model, init_bundle, betas, gammas, known_points, validation_data, writer
 
     train_losses = []
     val_losses = []
+    min_val_loss = 1000
 
 
     # Iterate for epochs to find best initial conditions, beta, and gamma that optimizes the MSE/Cross Entropy between
@@ -156,10 +157,15 @@ def fit(model, init_bundle, betas, gammas, known_points, validation_data, writer
             loss_r = loss_r * recovered_weight
             val_loss += loss_s + loss_i + loss_r
 
+        if val_loss < min_val_loss:
+            min_val_loss = val_loss
+            optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma = copy.deepcopy(i_0), copy.deepcopy(
+                r_0), copy.deepcopy(p_0), copy.deepcopy(beta), copy.deepcopy(gamma),
+
         val_losses.append(val_loss)
 
 
-    return i_0, r_0, beta, gamma, val_losses
+    return optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma, min_val_loss, val_losses
 
 
 def cross_entropy(predictions, targets, epsilon=1e-12):
