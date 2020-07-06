@@ -8,6 +8,7 @@ from constants import *
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -21,6 +22,7 @@ if __name__ == '__main__':
 
     # The interval in which the equation parameters and the initial conditions should vary
     # Switzerland
+    # area = 'Switzerland'
     # i_0_set = [0.01, 0.02]
     # r_0_set = [0.001, 0.006]
     # p_0_set = [0.9, 0.97]
@@ -28,18 +30,20 @@ if __name__ == '__main__':
     # gammas = [0.15, 0.3]
 
     # Spain
-    i_0_set = [0.01, 0.02]
-    r_0_set = [0.004, 0.009]
-    p_0_set = [0.9, 0.97]
-    betas = [0.4, 0.6]
-    gammas = [0.1, 0.2]
-
-    # Italy
+    # area = 'Spain'
     # i_0_set = [0.01, 0.02]
     # r_0_set = [0.004, 0.009]
     # p_0_set = [0.9, 0.97]
     # betas = [0.4, 0.6]
     # gammas = [0.1, 0.2]
+
+    # Italy
+    area = 'Italy'
+    i_0_set = [0.01, 0.02]
+    r_0_set = [0.004, 0.009]
+    p_0_set = [0.9, 0.97]
+    betas = [0.4, 0.6]
+    gammas = [0.1, 0.2]
 
     # Model parameters
     initial_conditions_set = []
@@ -49,10 +53,10 @@ if __name__ == '__main__':
     initial_conditions_set.append(p_0_set)
 
     # How many times I want to fit the trajectory, getting the best result
-    n_trials = 30
-    fit_epochs = 100
+    n_trials = 3
+    fit_epochs = 300
     n_batches = 10
-    fit_lr = 1e-3
+    fit_lr = 1e-4
 
     # Model parameters
     train_size = 2000
@@ -74,7 +78,6 @@ if __name__ == '__main__':
     sirp.load_state_dict(checkpoint['model_state_dict'])
 
     if mode == 'real':
-        area = 'Spain'
         time_unit = 0.25
         cut_off = 1.5e-3
         multiplication_factor = 10
@@ -142,27 +145,27 @@ if __name__ == '__main__':
     # Fit n_trials time and take the best fitting
     for i in range(n_trials):
         print('Fit no. {}\n'.format(i + 1))
-        i_0, r_0, p_0, beta, gamma, val_losses = fit(sirp,
-                                                     init_bundle=initial_conditions_set,
-                                                     betas=betas,
-                                                     gammas=gammas,
-                                                     lr=fit_lr,
-                                                     known_points=data_prelock,
-                                                     mode=mode,
-                                                     epochs=fit_epochs,
-                                                     verbose=True,
-                                                     n_batches=n_batches,
-                                                     susceptible_weight=susceptible_weight,
-                                                     infected_weight=infected_weight,
-                                                     recovered_weight=recovered_weight,
-                                                     passive_weight=passive_weight,
-                                                     force_init=force_init,
-                                                     validation_data=validation_data)
+        i_0, r_0, p_0, beta, gamma, val_loss, val_losses = fit(sirp,
+                                                               init_bundle=initial_conditions_set,
+                                                               betas=betas,
+                                                               gammas=gammas,
+                                                               lr=fit_lr,
+                                                               known_points=data_prelock,
+                                                               mode=mode,
+                                                               epochs=fit_epochs,
+                                                               verbose=True,
+                                                               n_batches=n_batches,
+                                                               susceptible_weight=susceptible_weight,
+                                                               infected_weight=infected_weight,
+                                                               recovered_weight=recovered_weight,
+                                                               passive_weight=passive_weight,
+                                                               force_init=force_init,
+                                                               validation_data=validation_data)
         s_0 = 1 - (i_0 + r_0 + p_0)
 
-        if val_losses[-1] < min_loss:
+        if val_loss < min_loss:
             optimal_s_0, optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma = s_0, i_0, r_0, p_0, beta, gamma
-            min_loss = val_losses[-1]
+            min_loss = val_loss
 
     optimal_initial_conditions = [optimal_s_0, optimal_i_0, optimal_r_0, optimal_p_0]
 
@@ -224,10 +227,14 @@ if __name__ == '__main__':
         plt.scatter(x_postlock, infected_postlock, marker=marker, label='Lockdown Ease', color=orange)
         plt.plot(x_infected_prelock, i_hat, label='Infected - Predicted', color=blue)
         plt.legend(loc='best', fontsize=legendsize)
-        plt.xlabel(r't (days)', fontsize=labelsize)
-        plt.ylabel(r'I(t)', fontsize=labelsize)
+        plt.xlabel(r'$days$', fontsize=labelsize)
+        plt.ylabel(r'$I(t)$', fontsize=labelsize)
         plt.xticks(fontsize=ticksize)
         plt.yticks(fontsize=ticksize)
+        handles, labels = plt.gca().get_legend_handles_labels()
+
+        handles = [handles[0], handles[2], handles[1]]
+        labels = [labels[0], labels[2], labels[1]]
 
         plt.subplot(1, 2, 2)
         plt.scatter(x_train_prelock, recovered_prelock, marker=marker, label='Training', color=green)
@@ -236,10 +243,14 @@ if __name__ == '__main__':
         plt.plot(x_recovered_prelock, r_hat, label='Recovered - Predicted', color=blue)
 
         plt.legend(loc='best', fontsize=legendsize)
-        plt.xlabel('t (days)', fontsize=labelsize)
-        plt.ylabel('R(t)', fontsize=labelsize)
+        plt.xlabel('$days$', fontsize=labelsize)
+        plt.ylabel('$R(t)$', fontsize=labelsize)
         plt.xticks(fontsize=ticksize)
         plt.yticks(fontsize=ticksize)
+        handles, labels = plt.gca().get_legend_handles_labels()
+
+        handles = [handles[0], handles[2], handles[1]]
+        labels = [labels[0], labels[2], labels[1]]
 
         plt.tight_layout()
         plt.show()
@@ -278,9 +289,9 @@ if __name__ == '__main__':
 
         plt.show()
 
-        # plt.figure(figsize=(5, 5))
-        # plt.plot(range(len(losses)), losses)
-        plt.show()
+    plt.figure(figsize=(5, 5))
+    plt.plot(range(len(val_losses)), val_losses)
+    plt.show()
 
     print('Optimal I(0) = {:.6f} | R(0) = {:.6f} | P(0) = {:.6f}\n'
           'Beta = {:.6f} | Gamma = {:.6f} \n'.format(optimal_i_0.item(),

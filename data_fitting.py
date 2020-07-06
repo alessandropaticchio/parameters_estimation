@@ -9,7 +9,6 @@ from numpy.random import uniform
 def fit(model, init_bundle, betas, gammas, known_points, validation_data, epochs=100, lr=8e-4, mode='real', n_batches=3,
         susceptible_weight=1., infected_weight=1.,
         recovered_weight=1., passive_weight=1., force_init=False, verbose=False, writer=None):
-
     model.eval()
 
     # Sample randomly initial conditions, beta and gamma
@@ -52,6 +51,7 @@ def fit(model, init_bundle, betas, gammas, known_points, validation_data, epochs
 
     train_losses = []
     val_losses = []
+    min_val_loss = 1000
 
     # Iterate for epochs to find best initial conditions, beta, and gamma that optimizes the MSE/Cross Entropy between
     # my prediction and the real data
@@ -74,8 +74,6 @@ def fit(model, init_bundle, betas, gammas, known_points, validation_data, epochs
             t_tensor = torch.Tensor([t]).reshape(-1, 1)
 
             s_hat, i_hat, r_hat, p_hat = model.parametric_solution(t_tensor, initial_conditions, beta=beta, gamma=gamma)
-
-
 
             if mode == 'real':
                 i_target = target[0]
@@ -173,10 +171,14 @@ def fit(model, init_bundle, betas, gammas, known_points, validation_data, epochs
                 loss_p = loss_p * passive_weight
                 val_loss += loss_s + loss_i + loss_r + loss_p
 
+        if val_loss < min_val_loss:
+            min_val_loss = val_loss
+            optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma = copy.deepcopy(i_0), copy.deepcopy(
+                r_0), copy.deepcopy(p_0), copy.deepcopy(beta), copy.deepcopy(gamma),
+
         val_losses.append(val_loss)
 
-
-    return i_0, r_0, p_0, beta, gamma, val_losses
+    return optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma, min_val_loss, val_losses
 
 
 def cross_entropy(predictions, targets, epsilon=1e-12):

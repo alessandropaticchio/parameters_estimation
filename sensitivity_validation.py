@@ -13,6 +13,7 @@ from constants import *
 from torch.utils.tensorboard import SummaryWriter
 from shutil import rmtree
 from tqdm import tqdm
+
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -21,11 +22,29 @@ if __name__ == '__main__':
     t_final = 20
 
     # Compute the interval in which the equation parameters and the initial conditions should vary
+    # Switzerland
+    area = 'Switzerland'
     i_0_set = [0.01, 0.02]
     r_0_set = [0.001, 0.006]
     p_0_set = [0.9, 0.97]
     betas = [0.7, 0.9]
     gammas = [0.15, 0.3]
+
+    # Spain
+    # area = 'Spain'
+    # i_0_set = [0.01, 0.02]
+    # r_0_set = [0.004, 0.009]
+    # p_0_set = [0.9, 0.97]
+    # betas = [0.4, 0.6]
+    # gammas = [0.1, 0.2]
+
+    # Italy
+    # area = 'Italy'
+    # i_0_set = [0.01, 0.02]
+    # r_0_set = [0.004, 0.009]
+    # p_0_set = [0.9, 0.97]
+    # betas = [0.4, 0.6]
+    # gammas = [0.1, 0.2]
 
     # Model parameters
     initial_conditions_set = []
@@ -38,9 +57,9 @@ if __name__ == '__main__':
     n_draws = 10
 
     # How many times I want to fit a single trajectory, getting the best result
-    n_trials = 10
+    n_trials = 5
 
-    fit_epochs = 100
+    fit_epochs = 300
 
     # Init model
     sirp = SIRNetwork(input=6, layers=4, hidden=50, output=4)
@@ -67,7 +86,6 @@ if __name__ == '__main__':
 
     if mode == 'real':
         time_unit = 0.25
-        area = 'Switzerland'
         multiplication_factor = 10
         data_prelock = get_data_dict(area, data_dict=countries_dict_prelock, time_unit=time_unit, skip_every=0,
                                      multiplication_factor=multiplication_factor,
@@ -154,28 +172,28 @@ if __name__ == '__main__':
         # Fit n_trials time and take the best fitting
         for j in range(n_trials):
             # Search optimal params
-            optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma, val_losses = fit(sirp,
-                                                                                                 init_bundle=initial_conditions_set,
-                                                                                                 betas=betas,
-                                                                                                 gammas=gammas,
-                                                                                                 lr=1e-3, n_batches=10,
-                                                                                                 known_points=exact_points_tmp,
-                                                                                                 writer=writer,
-                                                                                                 epochs=fit_epochs,
-                                                                                                 mode=mode,
-                                                                                                 validation_data=validation_data,
-                                                                                                 susceptible_weight=susceptible_weight,
-                                                                                                 recovered_weight=recovered_weight,
-                                                                                                 infected_weight=infected_weight,
-                                                                                                 passive_weight=passive_weight,
-                                                                                                 force_init=force_init
-                                                                                                 )
+            optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma, val_loss, val_losses = fit(sirp,
+                                                                                                           init_bundle=initial_conditions_set,
+                                                                                                           betas=betas,
+                                                                                                           gammas=gammas,
+                                                                                                           lr=1e-4,
+                                                                                                           n_batches=10,
+                                                                                                           known_points=exact_points_tmp,
+                                                                                                           writer=writer,
+                                                                                                           epochs=fit_epochs,
+                                                                                                           mode=mode,
+                                                                                                           validation_data=validation_data,
+                                                                                                           susceptible_weight=susceptible_weight,
+                                                                                                           recovered_weight=recovered_weight,
+                                                                                                           infected_weight=infected_weight,
+                                                                                                           passive_weight=passive_weight,
+                                                                                                           force_init=force_init)
 
             optimal_s_0 = 1 - (optimal_i_0 + optimal_r_0 + optimal_p_0)
 
-            if val_losses[-1] <= min_loss:
+            if val_loss <= min_loss:
                 optimal_subset = [optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma]
-                min_loss = val_losses[-1]
+                min_loss = val_loss
 
         optimal_set.append(optimal_subset)
 
@@ -198,11 +216,9 @@ if __name__ == '__main__':
         beta = set[3]
         gamma = set[4]
 
-
         s_hat, i_hat, r_hat, p_hat, de_loss, t = sirp.solve(i_0=i_0, r_0=r_0, p_0=p_0,
                                                             beta=beta, gamma=gamma, t_0=0,
                                                             t_final=t_final)
-
 
         overall_infected.append(i_hat)
         overall_recovered.append(r_hat)
@@ -290,18 +306,26 @@ if __name__ == '__main__':
     ax1 = plt.gca()
     ax1.xaxis.set_tick_params(labelsize=ticksize)
     ax1.yaxis.set_tick_params(labelsize=ticksize)
+    ax1.plot(x_infected_prelock, infected_mean, label='Infected - Predicted', color=blue)
     ax1.errorbar(x=x_train_prelock, y=infected_prelock, yerr=noise_std, label='Training', color=green,
                  fmt=marker)
+    ax1.scatter(x_valid_prelock, valid_infected, label='Validation', color=red, marker=marker)
+
     ax1.fill_between(x=x_infected_prelock, y1=infected_mean + 2 * infected_std,
                      y2=infected_mean - 2 * infected_std, alpha=0.3, color=blue)
-    ax1.scatter(x_valid_prelock, valid_infected, label='Validation', color=red, marker=marker)
     if mode == 'real':
         ax1.scatter(x_postlock, infected_postlock, marker=marker, label='Lockdown Ease', color=orange)
-    ax1.plot(x_infected_prelock, infected_mean, label='Infected - Predicted', color=blue)
 
-    ax1.legend(loc='best', fontsize=legendsize)
-    ax1.set_xlabel('t (days)', fontsize=labelsize)
-    ax1.set_ylabel('I(t)', fontsize=labelsize)
+
+    handles, labels = ax1.get_legend_handles_labels()
+
+    handles = [handles[0], handles[3], handles[1], handles[2]]
+    labels = [labels[0], labels[3], labels[1], labels[2]]
+
+    ax1.legend(handles, labels, loc='best', fontsize=legendsize)
+    ax1.set_xlabel('$days$', fontsize=labelsize)
+    ax1.set_ylabel('$I(t)$', fontsize=labelsize)
+
 
     plt.tight_layout()
 
@@ -320,8 +344,13 @@ if __name__ == '__main__':
     ax2.plot(x_recovered_prelock, recovered_mean, label='Recovered - Predicted', color=blue)
 
     ax2.legend(loc='best', fontsize=legendsize)
-    ax2.set_xlabel('t (days)', fontsize=labelsize)
-    ax2.set_ylabel('R(t)', fontsize=labelsize)
+    ax2.set_xlabel('$days$', fontsize=labelsize)
+    ax2.set_ylabel('$R(t)$', fontsize=labelsize)
+
+    handles, labels = ax2.get_legend_handles_labels()
+
+    handles = [handles[0], handles[1], handles[2], handles[3]]
+    labels = [labels[0], labels[1], labels[2], handles[3]]
 
     plt.tight_layout()
 
