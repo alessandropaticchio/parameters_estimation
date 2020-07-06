@@ -78,7 +78,7 @@ if __name__ == '__main__':
         s_0 = 1 - (i_0 + r_0)
 
         # Generate points between 0 and t_final
-        grid = torch.linspace(t_0, t_final, 20000).reshape(-1, 1)
+        grid = torch.linspace(t_0, t_final, steps=20000).reshape(-1, 1)
         t_dl = DataLoader(dataset=grid, batch_size=1, shuffle=False)
 
         s_0 = torch.Tensor([s_0]).reshape(-1, 1)
@@ -122,7 +122,7 @@ if __name__ == '__main__':
         s_0 = 1 - (i_0 + r_0)
 
         # Generate points between 0 and t_final
-        grid = torch.arange(0, t_final, out=torch.FloatTensor()).reshape(-1, 1)
+        grid = torch.linspace(t_0, t_final, steps=20000).reshape(-1, 1)
         t_dl = DataLoader(dataset=grid, batch_size=1, shuffle=False)
 
         s_0 = torch.Tensor([s_0]).reshape(-1, 1)
@@ -161,10 +161,10 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(20, 10))
     plt.subplot(1, 2, 1)
-    plt.xticks(fontsize=18)
-    plt.yticks(fontsize=18)
-    plt.xlabel('$I(0)$', fontsize=25)
-    plt.ylabel('$R(0)$', fontsize=25)
+    plt.xticks(fontsize=ticksize)
+    plt.yticks(fontsize=ticksize)
+    plt.xlabel('$I_{0}$', fontsize=labelsize)
+    plt.ylabel('$R_{0}$', fontsize=labelsize)
     if within_bundle:
         plt.tricontourf(i_0_sampled, r_0_sampled, log_inits_losses,
                         cmap=nlcmap(plt.cm.YlGn_r, levels=[1, 2, 2.1, 2.2, 2.3, 2.4, 3]))
@@ -172,31 +172,33 @@ if __name__ == '__main__':
         plt.tricontourf(i_0_sampled, r_0_sampled, log_inits_losses,
                         cmap=nlcmap(plt.cm.RdYlGn_r, levels=[1, 5, 10]))
         param_rectangle = Rectangle(xy=(i_0_set[0], r_0_set[0]), width=i_0_set[1] - i_0_set[0],
-                                    height=r_0_set[1] - r_0_set[0], alpha=0.7, facecolor=None, ec=blue, fill=False, lw=5, ls='--')
+                                    height=r_0_set[1] - r_0_set[0], alpha=0.7, facecolor=None, ec='black', fill=False, lw=5, ls='--')
         plt.gca().add_patch(param_rectangle)
     plt.xlim(max(0, i_0_set[0] - i_0_std/3), max(0, i_0_set[1] + i_0_std/3))
     plt.ylim(max(0, r_0_set[0] - r_0_std/3), max(0, r_0_set[1] + r_0_std/3))
     clb = plt.colorbar(ticks=[-3, -4, -5, -6, -7, -8, -9, -10, -11, -12])
-    clb.ax.tick_params(labelsize=18)
-    clb.set_label('$\mathit{Log(L)}$', labelpad=-45, y=1.05, rotation=0, fontsize=22)
+    clb.ax.tick_params( labelsize=ticksize)
+    clb.set_label('$L$', labelpad=-62, y=1.05, rotation=0, fontsize=labelsize)
     # plt.show()
     plt.subplot(1, 2, 2)
 
-    plt.xticks(fontsize=18)
-    plt.yticks(fontsize=18)
-    plt.xlabel(r'$\beta$', fontsize=25)
-    plt.ylabel(r'$\gamma$', fontsize=25)
+    plt.xticks(fontsize=ticksize)
+    plt.yticks(fontsize=ticksize)
+    plt.xlabel(r'$\beta$', fontsize=labelsize)
+    plt.ylabel(r'$\gamma$', fontsize=labelsize)
     if within_bundle:
         plt.tricontourf(beta_sampled, gamma_sampled, log_params_losses,
                         cmap=nlcmap(plt.cm.YlGn_r, levels=[1, 2, 2.1, 2.2, 2.3, 2.4, 3]))
     if not within_bundle:
         plt.tricontourf(beta_sampled, gamma_sampled, log_params_losses, cmap=nlcmap(plt.cm.RdYlGn_r, levels=[1, 5, 10]))
         param_rectangle = Rectangle(xy=(betas[0], gammas[0]), width=betas[1] - betas[0], height=gammas[1] - gammas[0],
-                                    alpha=0.7, facecolor=None, ec=blue, fill=False, lw=5, ls='--')
+                                    alpha=0.7, facecolor=None, ec='black', fill=False, lw=5, ls='--')
         plt.gca().add_patch(param_rectangle)
     plt.xlim(max(0, betas[0] - betas_std/3), max(0, betas[1] + betas_std/3))
     plt.ylim(max(0, gammas[0] - gammas_std/3), max(0, gammas[1] + gammas_std/3))
     clb = plt.colorbar(ticks=[-3, -4, -5, -6, -7, -8, -9, -10, -11, -12])
-    clb.ax.tick_params(labelsize=18)
-    clb.set_label('$\mathit{Log(L)}$', labelpad=-45, y=1.05, rotation=0, fontsize=22)
+    clb.ax.tick_params(labelsize=ticksize)
+    clb.set_label('$L$', labelpad=-60.5, y=1.05, rotation=0, fontsize=labelsize)
+
+    plt.savefig(ROOT_DIR + '/multi_loss_analysis.png')
     plt.show()
