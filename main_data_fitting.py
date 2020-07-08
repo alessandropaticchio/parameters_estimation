@@ -335,6 +335,8 @@ if __name__ == '__main__':
         plt.tight_layout()
         plt.show()
 
+ 
+
     else:
         synthetic_infected = [traj[1] for traj in list(data_prelock.values())]
         known_recovered_prelock = [traj[2] for traj in list(data_prelock.values())]

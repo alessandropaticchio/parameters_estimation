@@ -168,7 +168,7 @@ if __name__ == '__main__':
     if mode == 'real':
         total_population = selected_countries_populations[area]
     else:
-        total_population = 10e6
+        total_population = 10e3
 
     optimal_set = []
 
@@ -309,7 +309,7 @@ if __name__ == '__main__':
     plt.figure(figsize=(8, 5))
 
 
-    plt.title(title)
+    print(title)
     ax1 = plt.gca()
     ax1.xaxis.set_tick_params(labelsize=ticksize)
     ax1.yaxis.set_tick_params(labelsize=ticksize)
@@ -320,6 +320,40 @@ if __name__ == '__main__':
     ax1.errorbar(x=x_train, y=known_infected_prelock, yerr=noise_std, label='Training points', color=green,
                  fmt=marker, zorder=4)
     ax1.legend(loc='best')
+
+    import csv
+
+    with open('csv\\x_infected_{}.csv'.format(i_0_set), 'w', newline='') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(x_infected)
+
+    with open('csv\\infected_mean_{}.csv'.format(i_0_set), 'w', newline='') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(infected_mean)
+
+    with open('csv\\infected_std_{}.csv'.format(i_0_set), 'w', newline='') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(infected_std)
+
+    with open('csv\\x_valid_{}.csv'.format(i_0_set), 'w', newline='') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(x_valid)
+
+    with open('csv\\x_train_{}.csv'.format(i_0_set), 'w', newline='') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(x_train)
+
+    with open('csv\\known_infected_prelock_{}.csv'.format(i_0_set), 'w', newline='') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(known_infected_prelock)
+
+    with open('csv\\valid_infected_{}.csv'.format(i_0_set), 'w', newline='') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(valid_infected)
+
+    with open('csv\\noise_std_{}.csv'.format(i_0_set), 'w', newline='') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(noise_std)
 
     ax1.set_xlabel('$t$', fontsize=labelsize - 5)
     ax1.set_ylabel('$I(t)$', fontsize=labelsize - 5)
