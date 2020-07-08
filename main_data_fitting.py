@@ -27,14 +27,14 @@ if __name__ == '__main__':
     t_final = 20
 
     # The interval in which the equation parameters and the initial conditions should vary
-    i_0_set = [0.4, 0.6]
-    r_0_set = [0.1, 0.3]
-    betas = [0.45, 0.65]
-    gammas = [0.05, 0.15]
-    # i_0_set = [0.2, 0.4]
+    # i_0_set = [0.4, 0.6]
     # r_0_set = [0.1, 0.3]
-    # betas = [0., 0.4]
-    # gammas = [0.4, 0.7]
+    # betas = [0.45, 0.65]
+    # gammas = [0.05, 0.15]
+    i_0_set = [0.2, 0.4]
+    r_0_set = [0.1, 0.3]
+    betas = [0., 0.4]
+    gammas = [0.4, 0.7]
     initial_conditions_set = []
     initial_conditions_set.append(t_0)
     initial_conditions_set.append(i_0_set)
@@ -110,14 +110,14 @@ if __name__ == '__main__':
         force_init = False
     else:
         # Synthetic data
-        # exact_i_0 = 0.25
-        # exact_r_0 = 0.15
-        # exact_beta = 0.2
-        # exact_gamma = 0.5
-        exact_i_0 = 0.5
-        exact_r_0 = 0.2
-        exact_beta = 0.55
-        exact_gamma = 0.1
+        exact_i_0 = 0.25
+        exact_r_0 = 0.15
+        exact_beta = 0.2
+        exact_gamma = 0.5
+        # exact_i_0 = 0.5
+        # exact_r_0 = 0.2
+        # exact_beta = 0.55
+        # exact_gamma = 0.1
         data_prelock = get_syntethic_data(sir, t_final=t_final, i_0=exact_i_0, r_0=exact_r_0, exact_beta=exact_beta,
                                           exact_gamma=exact_gamma,
                                           size=20)
