@@ -252,6 +252,8 @@ if __name__ == '__main__':
     # Validation
     if mode == 'real':
 
+        # Save data for future plots
+
         x_infected_prelock = np.array(range(len(i_hat))) / time_unit
         x_recovered_prelock = np.array(range(len(r_hat))) / time_unit
         x_train_prelock = np.array(list(data_prelock.keys())) / time_unit
