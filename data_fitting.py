@@ -5,6 +5,7 @@ import copy
 import numpy as np
 from numpy.random import uniform
 
+
 def fit(model, init_bundle, betas, gammas, known_points, validation_data, writer, epochs=100, lr=8e-4, loss_mode='mse',
         susceptible_weight=1., infected_weight=1., n_batches=2,
         recovered_weight=1., force_init=False, verbose=False):
@@ -47,12 +48,10 @@ def fit(model, init_bundle, betas, gammas, known_points, validation_data, writer
     val_losses = []
     min_val_loss = 1000
 
-
     # Iterate for epochs to find best initial conditions, beta, and gamma that optimizes the MSE/Cross Entropy between
     # my prediction and the real data
     for epoch in tqdm(range(epochs), desc='Finding the best inputs', disable=not verbose):
         optimizer.zero_grad()
-
 
         batch_filling = 0.
 
@@ -137,13 +136,12 @@ def fit(model, init_bundle, betas, gammas, known_points, validation_data, writer
         # Validation loss
         val_loss = 0.
         for idx, t in enumerate(validation_data):
-
             target = validation_data[t]
 
             t_tensor = torch.Tensor([t]).reshape(-1, 1)
 
             s_hat, i_hat, r_hat = model.parametric_solution(t_tensor, initial_conditions, beta=beta,
-                                                                   gamma=gamma)
+                                                            gamma=gamma)
             s_target = target[0]
             i_target = target[1]
             r_target = target[2]
@@ -159,13 +157,12 @@ def fit(model, init_bundle, betas, gammas, known_points, validation_data, writer
 
         if val_loss < min_val_loss:
             min_val_loss = val_loss
-            optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma = copy.deepcopy(i_0), copy.deepcopy(
-                r_0), copy.deepcopy(p_0), copy.deepcopy(beta), copy.deepcopy(gamma),
+            optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma = copy.deepcopy(i_0), copy.deepcopy(
+                r_0), copy.deepcopy(beta), copy.deepcopy(gamma)
 
         val_losses.append(val_loss)
 
-
-    return optimal_i_0, optimal_r_0, optimal_p_0, optimal_beta, optimal_gamma, min_val_loss, val_losses
+    return optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma, min_val_loss, val_losses
 
 
 def cross_entropy(predictions, targets, epsilon=1e-12):

@@ -24,14 +24,14 @@ if __name__ == '__main__':
     t_final = 20
 
     # Compute the interval in which the equation parameters and the initial conditions should vary
-    i_0_set = [0.2, 0.4]
-    r_0_set = [0.1, 0.3]
-    betas = [0., 0.4]
-    gammas = [0.4, 0.7]
-    # i_0_set = [0.4, 0.6]
+    # i_0_set = [0.2, 0.4]
     # r_0_set = [0.1, 0.3]
-    # betas = [0.45, 0.65]
-    # gammas = [0.05, 0.15]
+    # betas = [0., 0.4]
+    # gammas = [0.4, 0.7]
+    i_0_set = [0.4, 0.6]
+    r_0_set = [0.1, 0.3]
+    betas = [0.45, 0.65]
+    gammas = [0.05, 0.15]
     initial_conditions_set = []
     initial_conditions_set.append(t_0)
     initial_conditions_set.append(i_0_set)
@@ -111,14 +111,14 @@ if __name__ == '__main__':
         force_init = True
     else:
         # Synthetic data
-        exact_i_0 = 0.25
-        exact_r_0 = 0.15
-        exact_beta = 0.2
-        exact_gamma = 0.5
-        # exact_i_0 = 0.5
-        # exact_r_0 = 0.2
-        # exact_beta = 0.55
-        # exact_gamma = 0.1
+        # exact_i_0 = 0.25
+        # exact_r_0 = 0.15
+        # exact_beta = 0.2
+        # exact_gamma = 0.5
+        exact_i_0 = 0.5
+        exact_r_0 = 0.2
+        exact_beta = 0.55
+        exact_gamma = 0.1
         data_prelock = get_syntethic_data(sir, t_final=t_final, i_0=exact_i_0, r_0=exact_r_0, exact_beta=exact_beta,
                                           exact_gamma=exact_gamma,
                                           size=20)
@@ -189,7 +189,7 @@ if __name__ == '__main__':
         # Fit n_trials time and take the best fitting
         for j in range(n_trials):
             # Search optimal params
-            optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma, val_losses = fit(sir,
+            optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma, min_val_loss, val_losses = fit(sir,
                                                                                     init_bundle=initial_conditions_set,
                                                                                     betas=betas,
                                                                                     gammas=gammas,
@@ -209,9 +209,9 @@ if __name__ == '__main__':
 
             optimal_s_0 = 1 - (optimal_i_0 + optimal_r_0)
 
-            if val_losses[-1] <= min_loss:
+            if min_val_loss <= min_loss:
                 optimal_subset = [optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma]
-                min_loss = val_losses[-1]
+                min_loss = min_val_loss
 
         optimal_set.append(optimal_subset)
 
@@ -308,16 +308,17 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(8, 5))
 
+
     plt.title(title)
     ax1 = plt.gca()
     ax1.xaxis.set_tick_params(labelsize=ticksize)
     ax1.yaxis.set_tick_params(labelsize=ticksize)
-    ax1.plot(x_infected, infected_mean, label='Infected - Predicted', color=blue)
+    ax1.plot(x_infected, infected_mean, linewidth=3, label='Infected - Predicted', color=blue, zorder=1)
     ax1.fill_between(x=x_infected, y1=infected_mean + 2 * infected_std,
-                     y2=infected_mean - 2 * infected_std, alpha=0.3, color=blue)
-    ax1.scatter(x_valid, valid_infected, label='Validation points', color=red, marker=marker)
+                     y2=infected_mean - 2 * infected_std, alpha=0.3, color=blue, zorder=2,)
+    ax1.scatter(x_valid, valid_infected, label='Validation points', color=red, marker=marker, zorder=3)
     ax1.errorbar(x=x_train, y=known_infected_prelock, yerr=noise_std, label='Training points', color=green,
-                 fmt=marker)
+                 fmt=marker, zorder=4)
     ax1.legend(loc='best')
 
     ax1.set_xlabel('$t$', fontsize=labelsize)
@@ -337,24 +338,24 @@ if __name__ == '__main__':
 
     plt.savefig(ROOT_DIR + '/plots/sensitivity_val_{}.png'.format(ts))
 
-    plt.figure(figsize=(8, 5))
-    plt.title(title)
-    ax2 = plt.gca()
-    ax2.xaxis.set_tick_params(labelsize=ticksize)
-    ax2.yaxis.set_tick_params(labelsize=ticksize)
-    ax2.plot(x_recovered, recovered_mean, label='Predicted', color=blue)
-    ax2.fill_between(x=x_recovered, y1=recovered_mean + 2 * recovered_std,
-                     y2=recovered_mean - 2 * recovered_std, alpha=0.3, color=blue)
-    ax2.scatter(x=x_train, y=known_recovered_prelock, label='Training points',
-                color=green, marker=marker)
-    ax2.scatter(x_valid, valid_recovered, label='Validation points', color=red, marker=marker)
-    ax2.legend(loc='best')
-    ax2.set_xlabel('$t$', fontsize=labelsize)
-    ax2.set_ylabel('$R(t)$', fontsize=labelsize)
-
-    plt.xticks(fontsize=ticksize / 1.5)
-    plt.yticks(fontsize=ticksize / 1.5)
-    plt.tight_layout()
+    # plt.figure(figsize=(8, 5))
+    # plt.title(title)
+    # ax2 = plt.gca()
+    # ax2.xaxis.set_tick_params(labelsize=ticksize)
+    # ax2.yaxis.set_tick_params(labelsize=ticksize)
+    # ax2.plot(x_recovered, recovered_mean, linewidth=3, label='Predicted', color=blue, zorder=1)
+    # ax2.fill_between(x=x_recovered, y1=recovered_mean + 2 * recovered_std,
+    #                  y2=recovered_mean - 2 * recovered_std, alpha=0.3, color=blue, zorder=2)
+    # ax2.scatter(x=x_train, y=known_recovered_prelock, label='Training points',
+    #             color=green, marker=marker, zorder=3)
+    # ax2.scatter(x_valid, valid_recovered, label='Validation points', color=red, marker=marker, zorder=4)
+    # ax2.legend(loc='best')
+    # ax2.set_xlabel('$t$', fontsize=labelsize)
+    # ax2.set_ylabel('$R(t)$', fontsize=labelsize)
+    #
+    # plt.xticks(fontsize=ticksize / 1.5)
+    # plt.yticks(fontsize=ticksize / 1.5)
+    # plt.tight_layout()
 
     plt.show()
 

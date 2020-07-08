@@ -16,3 +16,4 @@ magenta = '#FF0062'
 ticksize = 22
 labelsize = 30
 legendsize = 25
+mylinewidth = 15

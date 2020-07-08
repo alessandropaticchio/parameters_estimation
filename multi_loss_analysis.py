@@ -51,8 +51,8 @@ if __name__ == '__main__':
         sir.load_state_dict(checkpoint['model_state_dict'])
         models.append(sir)
 
-    n_draws = 300
-    steps = 20000
+    n_draws = 150
+    steps = 6000
 
     # Will save the loss as a function of initial conditions
     init_losses = {}
@@ -182,7 +182,7 @@ if __name__ == '__main__':
     plt.ylim(max(0, r_0_set[0] - r_0_std/3), max(0, r_0_set[1] + r_0_std/3))
     clb = plt.colorbar(ticks=[-3, -4, -5, -6, -7, -8, -9, -10, -11, -12], format=ticker.FuncFormatter(fmt))
     clb.ax.tick_params(labelsize=ticksize)
-    clb.set_label('$L$', labelpad=-62, y=1.05, rotation=0, fontsize=labelsize)
+    clb.set_label('L', labelpad=-62, y=1.05, rotation=0, fontsize=labelsize)
     # plt.show()
     plt.subplot(1, 2, 2)
 
@@ -203,6 +203,6 @@ if __name__ == '__main__':
     plt.ylim(max(0, gammas[0] - gammas_std/3), max(0, gammas[1] + gammas_std/3))
     clb = plt.colorbar(ticks=[-3, -4, -5, -6, -7, -8, -9, -10, -11, -12], format=ticker.FuncFormatter(fmt))
     clb.ax.tick_params(labelsize=ticksize)
-    clb.set_label('$L$', labelpad=-60.5, y=1.05, rotation=0, fontsize=labelsize)
+    clb.set_label('L', labelpad=-60.5, y=1.05, rotation=0, fontsize=labelsize)
     plt.savefig(ROOT_DIR + '/multi_loss_analysis.png')
     plt.show()
