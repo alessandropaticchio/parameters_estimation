@@ -53,8 +53,8 @@ if __name__ == '__main__':
     initial_conditions_set.append(p_0_set)
 
     # How many times I want to fit the trajectory, getting the best result
-    n_trials = 3
-    fit_epochs = 300
+    n_trials = 1
+    fit_epochs = 3
     n_batches = 10
     fit_lr = 1e-4
 
@@ -217,9 +217,6 @@ if __name__ == '__main__':
 
         plt.figure(figsize=(22, 8))
 
-        plt.gca().spines['top'].set_visible(False)
-        plt.gca().spines['right'].set_visible(False)
-
         plt.subplot(1, 2, 1)
         marker = 'o'
         plt.scatter(x_train_prelock, infected_prelock, marker=marker, label='Training', color=green)
@@ -254,6 +251,60 @@ if __name__ == '__main__':
 
         plt.tight_layout()
         plt.show()
+
+        import csv
+
+        with open('csv\\infected_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(infected_prelock)
+
+        with open('csv\\infected_postlock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(infected_postlock)
+
+        with open('csv\\x_valid_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(x_valid_prelock)
+
+        with open('csv\\x_recovered_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(x_recovered_prelock)
+
+        with open('csv\\x_infected_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(x_infected_prelock)
+
+        with open('csv\\recovered_postlock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(recovered_postlock)
+
+        with open('csv\\valid_recovered_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(valid_recovered)
+
+        with open('csv\\valid_infected_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(valid_infected)
+
+        with open('csv\\r_hat_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(r_hat)
+
+        with open('csv\\i_hat_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(i_hat)
+
+        with open('csv\\x_train_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(x_train_prelock)
+
+        with open('csv\\x_postlock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(x_postlock)
+
+        with open('csv\\recovered_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(recovered_prelock)
 
 
     else:
