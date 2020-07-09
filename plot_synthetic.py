@@ -76,11 +76,13 @@ for i_0_set in i_0_sets:
 
 
     def fmt(x, pos):
-        exp = 2
-        x = str(x)
-        return r'${} \cdot 10^2$'.format(x[0])
+        f=ticker.ScalarFormatter(useOffset=False, useMathText=True)
+        x = "${}$".format(f._formatSciNotation('%1.10e' % x))
+        if '\\times' in x:
+            x = x.replace('\\times','\\cdot')
+        return x
 
-    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(fmt))
+    plt.gca().yaxis.set_major_formatter(ticker.FuncFormatter(fmt))
 
     ax1.plot(x_infected, infected_mean, linewidth=3, label='Infected - Predicted', color=blue, zorder=1)
     ax1.fill_between(x=x_infected, y1=infected_mean + 2 * infected_std,
@@ -90,8 +92,8 @@ for i_0_set in i_0_sets:
                  fmt=marker, zorder=4)
 
 
-    ax1.set_xlabel('$t$', fontsize=labelsize - 1)
-    ax1.set_ylabel('$I(t)$', fontsize=labelsize - 1)
+    ax1.set_xlabel('$t$', fontsize=labelsize - 3)
+    ax1.set_ylabel('$I(t)$', fontsize=labelsize - 3)
 
     handles, labels = ax1.get_legend_handles_labels()
     handles = [handles[0], handles[2], handles[1]]
