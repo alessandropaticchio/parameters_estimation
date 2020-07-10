@@ -23,12 +23,12 @@ if __name__ == '__main__':
 
     # Compute the interval in which the equation parameters and the initial conditions should vary
     # Switzerland
-    area = 'Switzerland'
-    i_0_set = [0.01, 0.02]
-    r_0_set = [0.001, 0.006]
-    p_0_set = [0.9, 0.97]
-    betas = [0.7, 0.9]
-    gammas = [0.15, 0.3]
+    # area = 'Switzerland'
+    # i_0_set = [0.01, 0.02]
+    # r_0_set = [0.001, 0.006]
+    # p_0_set = [0.9, 0.97]
+    # betas = [0.7, 0.9]
+    # gammas = [0.15, 0.3]
 
     # Spain
     # area = 'Spain'
@@ -39,12 +39,12 @@ if __name__ == '__main__':
     # gammas = [0.1, 0.2]
 
     # Italy
-    # area = 'Italy'
-    # i_0_set = [0.01, 0.02]
-    # r_0_set = [0.004, 0.009]
-    # p_0_set = [0.9, 0.97]
-    # betas = [0.4, 0.6]
-    # gammas = [0.1, 0.2]
+    area = 'Italy'
+    i_0_set = [0.01, 0.02]
+    r_0_set = [0.004, 0.009]
+    p_0_set = [0.9, 0.97]
+    betas = [0.4, 0.6]
+    gammas = [0.1, 0.2]
 
     # Model parameters
     initial_conditions_set = []
@@ -57,9 +57,9 @@ if __name__ == '__main__':
     n_draws = 10
 
     # How many times I want to fit a single trajectory, getting the best result
-    n_trials = 5
+    n_trials = 3
 
-    fit_epochs = 300
+    fit_epochs = 1000
 
     # Init model
     sirp = SIRNetwork(input=6, layers=4, hidden=50, output=4)
@@ -176,7 +176,7 @@ if __name__ == '__main__':
                                                                                                            init_bundle=initial_conditions_set,
                                                                                                            betas=betas,
                                                                                                            gammas=gammas,
-                                                                                                           lr=1e-4,
+                                                                                                           lr=1e-3,
                                                                                                            n_batches=10,
                                                                                                            known_points=exact_points_tmp,
                                                                                                            writer=writer,
@@ -352,7 +352,81 @@ if __name__ == '__main__':
     handles = [handles[0], handles[1], handles[2], handles[3]]
     labels = [labels[0], labels[1], labels[2], handles[3]]
 
-    plt.tight_layout()
+    if mode=='real':
+
+        import csv
+
+        with open('csv\\sensitivity_infected_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(infected_prelock)
+
+        with open('csv\\sensitivity_infected_postlock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(infected_postlock)
+
+        with open('csv\\sensitivity_x_valid_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(x_valid_prelock)
+
+        with open('csv\\sensitivity_x_recovered_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(x_recovered_prelock)
+
+        with open('csv\\sensitivity_x_infected_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(x_infected_prelock)
+
+        with open('csv\\sensitivity_recovered_postlock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(recovered_postlock)
+
+        with open('csv\\sensitivity_valid_recovered_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(valid_recovered)
+
+        with open('csv\\sensitivity_valid_infected_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(valid_infected)
+
+        with open('csv\\sensitivity_r_hat_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(r_hat)
+
+        with open('csv\\sensitivity_i_hat_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(i_hat)
+
+        with open('csv\\sensitivity_x_train_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(x_train_prelock)
+
+        with open('csv\\sensitivity_x_postlock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(x_postlock)
+
+        with open('csv\\sensitivity_recovered_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(recovered_prelock)
+
+        with open('csv\\sensitivity_infected_mean_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(infected_mean)
+
+        with open('csv\\sensitivity_infected_std_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(infected_std)
+
+        with open('csv\\sensitivity_recovered_std_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(recovered_std)
+
+        with open('csv\\sensitivity_recovered_mean_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(recovered_mean)
+
+        with open('csv\\sensitivity_noise_std_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(noise_std)
 
     plt.show()
 

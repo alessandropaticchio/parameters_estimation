@@ -6,7 +6,7 @@ from constants import *
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-areas = ['Italy']
+areas = ['Italy', 'Spain', 'Switzerland']
 
 for area in areas:
 
@@ -87,7 +87,7 @@ for area in areas:
         x_train_prelock = [float(x) for x in x_train_prelock]
         x_train_prelock = np.array(x_train_prelock)
 
-    with open('csv\\x_train_postlock_{}.csv'.format(area), newline='') as f:
+    with open('csv\\x_postlock_{}.csv'.format(area), newline='') as f:
         reader = csv.reader(f)
         x_train_postlock = list(reader)
         x_train_postlock = [item for sublist in x_train_postlock for item in sublist]
@@ -119,37 +119,48 @@ for area in areas:
 
     plt.gca().yaxis.set_major_formatter(ticker.FuncFormatter(fmt))
 
-    marker = 'o'
+    marker = '.'
     plt.scatter(x_train_prelock, infected_prelock, marker=marker, label='Training', color=green)
     plt.scatter(x_valid_prelock, valid_infected, marker=marker, label='Validation', color=red)
     plt.scatter(x_postlock, infected_postlock, marker=marker, label='Lockdown Ease', color=orange)
     plt.plot(x_infected_prelock, i_hat, label='Infected - Predicted', color=blue)
-    plt.legend(loc='best', fontsize=legendsize)
-    plt.xlabel(r'$days$', fontsize=labelsize)
-    plt.ylabel(r'$I(t)$', fontsize=labelsize)
-    plt.xticks(fontsize=ticksize)
-    plt.yticks(fontsize=ticksize)
+    if area=='Switzerland':
+        plt.legend(loc='upper right', fontsize=legendsize-15)
+    else:
+        plt.legend(loc='lower left', fontsize=legendsize-15)
+    plt.xlabel(r'$days$', fontsize=labelsize-5)
+    plt.ylabel(r'$I(t)$', fontsize=labelsize-5)
+    plt.xticks(fontsize=ticksize-3)
+    plt.yticks(fontsize=ticksize-3)
+    plt.axvline(x=x_postlock[0], color='black', linestyle='--')
     handles, labels = plt.gca().get_legend_handles_labels()
+    plt.gcf().subplots_adjust(left=0.35, bottom=0.25)
 
     handles = [handles[0], handles[2], handles[1]]
     labels = [labels[0], labels[2], labels[1]]
-
+    plt.savefig('{}_fitting_i'.format(area))
 
     plt.figure(figsize=(6, 5))
+    plt.gca().yaxis.set_major_formatter(ticker.FuncFormatter(fmt))
+
     plt.scatter(x_train_prelock, recovered_prelock, marker=marker, label='Training', color=green)
     plt.scatter(x_valid_prelock, valid_recovered, marker=marker, label='Validation', color=red)
     plt.scatter(x_postlock, recovered_postlock, marker=marker, label='Lockdown Ease', color=orange)
     plt.plot(x_recovered_prelock, r_hat, label='Recovered - Predicted', color=blue)
+    plt.axvline(x=x_postlock[0], color='black', linestyle='--')
 
-    plt.legend(loc='best', fontsize=legendsize)
-    plt.xlabel('$days$', fontsize=labelsize)
-    plt.ylabel('$R(t)$', fontsize=labelsize)
-    plt.xticks(fontsize=ticksize)
-    plt.yticks(fontsize=ticksize)
+    plt.legend(loc='best', fontsize=legendsize-15)
+    plt.xlabel('$days$', fontsize=labelsize-5)
+    plt.ylabel('$R(t)$', fontsize=labelsize-5)
+    plt.xticks(fontsize=ticksize-3)
+    plt.yticks(fontsize=ticksize-3)
+
     handles, labels = plt.gca().get_legend_handles_labels()
 
     handles = [handles[0], handles[2], handles[1]]
     labels = [labels[0], labels[2], labels[1]]
+    plt.gcf().subplots_adjust(left=0.35, bottom=0.25)
 
-    plt.tight_layout()
+    plt.savefig('{}_fitting_r'.format(area))
+
     plt.show()

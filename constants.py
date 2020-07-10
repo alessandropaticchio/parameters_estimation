@@ -17,5 +17,6 @@ purple = '#4B0082'
 dark_orange = '#FF4E00'
 magenta = '#FF0062'
 ticksize = 22
-labelsize = 30
+labelsize = 25
 legendsize = 25
+mylinewidth = 15

@@ -22,12 +22,12 @@ if __name__ == '__main__':
 
     # The interval in which the equation parameters and the initial conditions should vary
     # Switzerland
-    # area = 'Switzerland'
-    # i_0_set = [0.01, 0.02]
-    # r_0_set = [0.001, 0.006]
-    # p_0_set = [0.9, 0.97]
-    # betas = [0.7, 0.9]
-    # gammas = [0.15, 0.3]
+    area = 'Switzerland'
+    i_0_set = [0.01, 0.02]
+    r_0_set = [0.001, 0.006]
+    p_0_set = [0.9, 0.97]
+    betas = [0.7, 0.9]
+    gammas = [0.15, 0.3]
 
     # Spain
     # area = 'Spain'
@@ -38,12 +38,12 @@ if __name__ == '__main__':
     # gammas = [0.1, 0.2]
 
     # Italy
-    area = 'Italy'
-    i_0_set = [0.01, 0.02]
-    r_0_set = [0.004, 0.009]
-    p_0_set = [0.9, 0.97]
-    betas = [0.4, 0.6]
-    gammas = [0.1, 0.2]
+    # area = 'Italy'
+    # i_0_set = [0.01, 0.02]
+    # r_0_set = [0.004, 0.009]
+    # p_0_set = [0.9, 0.97]
+    # betas = [0.4, 0.6]
+    # gammas = [0.1, 0.2]
 
     # Model parameters
     initial_conditions_set = []
@@ -53,10 +53,10 @@ if __name__ == '__main__':
     initial_conditions_set.append(p_0_set)
 
     # How many times I want to fit the trajectory, getting the best result
-    n_trials = 1
-    fit_epochs = 3
+    n_trials = 10
+    fit_epochs = 1000
     n_batches = 10
-    fit_lr = 1e-4
+    fit_lr = 1e-3
 
     # Model parameters
     train_size = 2000
@@ -305,7 +305,6 @@ if __name__ == '__main__':
         with open('csv\\recovered_prelock_{}.csv'.format(area), 'w', newline='') as myfile:
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
             wr.writerow(recovered_prelock)
-
 
     else:
         x_infected = np.array(range(len(i_hat)))
