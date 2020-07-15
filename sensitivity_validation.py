@@ -24,14 +24,14 @@ if __name__ == '__main__':
     t_final = 20
 
     # Compute the interval in which the equation parameters and the initial conditions should vary
-    # i_0_set = [0.2, 0.4]
-    # r_0_set = [0.1, 0.3]
-    # betas = [0., 0.4]
-    # gammas = [0.4, 0.7]
-    i_0_set = [0.4, 0.6]
+    i_0_set = [0.2, 0.4]
     r_0_set = [0.1, 0.3]
-    betas = [0.45, 0.65]
-    gammas = [0.05, 0.15]
+    betas = [0., 0.4]
+    gammas = [0.4, 0.7]
+    # i_0_set = [0.4, 0.6]
+    # r_0_set = [0.1, 0.3]
+    # betas = [0.45, 0.65]
+    # gammas = [0.05, 0.15]
     initial_conditions_set = []
     initial_conditions_set.append(t_0)
     initial_conditions_set.append(i_0_set)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     n_draws = 10
 
     # How many times I want to fit a single trajectory, getting the best result
-    n_trials = 1
+    n_trials = 3
 
     fit_epochs = 1000
 
@@ -111,14 +111,14 @@ if __name__ == '__main__':
         force_init = True
     else:
         # Synthetic data
-        # exact_i_0 = 0.25
-        # exact_r_0 = 0.15
-        # exact_beta = 0.2
-        # exact_gamma = 0.5
-        exact_i_0 = 0.5
-        exact_r_0 = 0.2
-        exact_beta = 0.55
-        exact_gamma = 0.1
+        exact_i_0 = 0.25
+        exact_r_0 = 0.15
+        exact_beta = 0.2
+        exact_gamma = 0.5
+        # exact_i_0 = 0.5
+        # exact_r_0 = 0.2
+        # exact_beta = 0.55
+        # exact_gamma = 0.1
         data_prelock = get_syntethic_data(sir, t_final=t_final, i_0=exact_i_0, r_0=exact_r_0, exact_beta=exact_beta,
                                           exact_gamma=exact_gamma,
                                           size=20)
@@ -168,7 +168,7 @@ if __name__ == '__main__':
     if mode == 'real':
         total_population = selected_countries_populations[area]
     else:
-        total_population = 10e2
+        total_population = 10e6
 
     optimal_set = []
 
@@ -179,7 +179,8 @@ if __name__ == '__main__':
         exact_points_tmp = copy.deepcopy(data_prelock)
         min_loss = 1000
 
-        # Inject some noise in the infected. Noise is gaussian noise with mean 0 and std=(sqrt(Infected(t)) * N_total ) / N_total
+        # Inject some noise in the infected.
+        # Noise is gaussian noise with mean 0 and std=(sqrt(Infected(t)) * N_total ) / N_total
         for t, v in exact_points_tmp.items():
             scale = np.sqrt((v[1] * total_population)) / total_population
             noise = np.random.normal(loc=0, scale=scale)
@@ -190,21 +191,21 @@ if __name__ == '__main__':
         for j in range(n_trials):
             # Search optimal params
             optimal_i_0, optimal_r_0, optimal_beta, optimal_gamma, min_val_loss, val_losses = fit(sir,
-                                                                                    init_bundle=initial_conditions_set,
-                                                                                    betas=betas,
-                                                                                    gammas=gammas,
-                                                                                    lr=1e-1,
-                                                                                    known_points=data_prelock,
-                                                                                    writer=writer,
-                                                                                    loss_mode=loss_mode,
-                                                                                    epochs=fit_epochs,
-                                                                                    verbose=False,
-                                                                                    n_batches=n_batches,
-                                                                                    susceptible_weight=susceptible_weight,
-                                                                                    recovered_weight=recovered_weight,
-                                                                                    infected_weight=infected_weight,
-                                                                                    force_init=force_init,
-                                                                                    validation_data=validation_data)
+                                                                                                  init_bundle=initial_conditions_set,
+                                                                                                  betas=betas,
+                                                                                                  gammas=gammas,
+                                                                                                  lr=1e-3,
+                                                                                                  known_points=exact_points_tmp,
+                                                                                                  writer=writer,
+                                                                                                  loss_mode=loss_mode,
+                                                                                                  epochs=fit_epochs,
+                                                                                                  verbose=False,
+                                                                                                  n_batches=n_batches,
+                                                                                                  susceptible_weight=susceptible_weight,
+                                                                                                  recovered_weight=recovered_weight,
+                                                                                                  infected_weight=infected_weight,
+                                                                                                  force_init=force_init,
+                                                                                                  validation_data=validation_data)
             s_0 = 1 - (optimal_i_0 + optimal_r_0)
 
             optimal_s_0 = 1 - (optimal_i_0 + optimal_r_0)
@@ -308,14 +309,13 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(8, 5))
 
-
     print(title)
     ax1 = plt.gca()
     ax1.xaxis.set_tick_params(labelsize=ticksize)
     ax1.yaxis.set_tick_params(labelsize=ticksize)
     ax1.plot(x_infected, infected_mean, linewidth=3, label='Infected - Predicted', color=blue, zorder=1)
     ax1.fill_between(x=x_infected, y1=infected_mean + 2 * infected_std,
-                     y2=infected_mean - 2 * infected_std, alpha=0.3, color=blue, zorder=2,)
+                     y2=infected_mean - 2 * infected_std, alpha=0.3, color=blue, zorder=2, )
     ax1.scatter(x_valid, valid_infected, label='Validation points', color=red, marker=marker, zorder=3)
     ax1.errorbar(x=x_train, y=known_infected_prelock, yerr=noise_std, label='Training points', color=green,
                  fmt=marker, zorder=4)
