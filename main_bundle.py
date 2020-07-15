@@ -23,7 +23,7 @@ if __name__ == '__main__':
     r_0_set = [0.004, 0.009]
     p_0_set = [0.9, 0.97]
     betas = [0.4, 0.6]
-    gammas = [0.05, 0.15]
+    gammas = [0.1, 0.2]
 
     # Model parameters
     initial_conditions_set = []
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     t = np.linspace(0, t_final, t_final)
     s_p, i_p, r_p, p_p = SIRP_solution(t, s_0, i_0, r_0, p_0, beta, gamma)
 
-    s_hat, i_hat, r_hat, p_hat, de_loss = sirp.solve(i_0=i_0, r_0=r_0, p_0=p_0, beta=beta, gamma=gamma, t_0=0, t_final=t_final)
+    s_hat, i_hat, r_hat, p_hat, de_loss, _ = sirp.solve(i_0=i_0, r_0=r_0, p_0=p_0, beta=beta, gamma=gamma, t_0=0, t_final=t_final)
 
     print('DE Loss: {:.15E} | LogLoss = {}'.format(de_loss, np.log(de_loss.item())))
 

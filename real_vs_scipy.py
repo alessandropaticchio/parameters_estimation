@@ -8,11 +8,11 @@ from real_data_countries import countries_dict_prelock, countries_dict_postlock,
 
 t_final = 20
 time_unit = 0.25
-area = 'Greece'
+area = 'United Kingdom'
 scaled = True
 
 if scaled:
-    cut_off = 0.5e-4
+    cut_off = 1.5e-3
 else:
     cut_off = 20000
 
@@ -39,8 +39,8 @@ confirmed_postlock = infected_postlock + recovered_postlock
 x_postlock = np.array(list(data_postlock.keys())) + list(data_prelock.keys())[-1] + time_unit
 
 # Scipy solver solution
-beta = 0.58
-gamma = 0.1
+beta = 0.15
+gamma = 0.003
 
 # Fix the initial conditions as the first element of the infected and recovered data
 alpha = 0.964

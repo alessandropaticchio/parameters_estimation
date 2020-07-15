@@ -3,7 +3,7 @@ from data_fitting import fit
 from utils import get_syntethic_data, get_data_dict
 from real_data_countries import countries_dict_prelock, countries_dict_postlock, selected_countries_populations, \
     selected_countries_rescaling
-from torch.utils.data import DataLoader
+import csv
 from constants import *
 import torch
 import numpy as np
@@ -22,12 +22,12 @@ if __name__ == '__main__':
 
     # The interval in which the equation parameters and the initial conditions should vary
     # Switzerland
-    area = 'Switzerland'
-    i_0_set = [0.01, 0.02]
-    r_0_set = [0.001, 0.006]
-    p_0_set = [0.9, 0.97]
-    betas = [0.7, 0.9]
-    gammas = [0.15, 0.3]
+    # area = 'Switzerland'
+    # i_0_set = [0.01, 0.02]
+    # r_0_set = [0.001, 0.006]
+    # p_0_set = [0.9, 0.97]
+    # betas = [0.7, 0.9]
+    # gammas = [0.15, 0.3]
 
     # Spain
     # area = 'Spain'
@@ -38,12 +38,12 @@ if __name__ == '__main__':
     # gammas = [0.1, 0.2]
 
     # Italy
-    # area = 'Italy'
-    # i_0_set = [0.01, 0.02]
-    # r_0_set = [0.004, 0.009]
-    # p_0_set = [0.9, 0.97]
-    # betas = [0.4, 0.6]
-    # gammas = [0.1, 0.2]
+    area = 'Italy'
+    i_0_set = [0.01, 0.02]
+    r_0_set = [0.004, 0.009]
+    p_0_set = [0.9, 0.97]
+    betas = [0.4, 0.6]
+    gammas = [0.1, 0.2]
 
     # Model parameters
     initial_conditions_set = []
@@ -176,8 +176,27 @@ if __name__ == '__main__':
     s_hat, i_hat, r_hat, p_hat, de_loss, t = sirp.solve(i_0=optimal_i_0, r_0=optimal_r_0, p_0=optimal_p_0,
                                                         beta=optimal_beta, gamma=optimal_gamma, t_0=0, t_final=t_final)
 
+
     # Validation
     if mode == 'real':
+
+        with open('csv\\s_hat_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(s_hat)
+
+        with open('csv\\i_hat_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(i_hat)
+
+        with open('csv\\r_hat_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(r_hat)
+
+        with open('csv\\p_hat_{}.csv'.format(area), 'w', newline='') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(p_hat)
+
+
         x_infected_prelock = t / time_unit
         x_recovered_prelock = t / time_unit
         x_train_prelock = np.array(list(data_prelock.keys())) / time_unit

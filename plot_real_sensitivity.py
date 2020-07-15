@@ -157,9 +157,9 @@ for i, area in enumerate(areas):
     labels = [labels[0], labels[3], labels[1], labels[2]]
 
     if area=='Switzerland':
-        plt.legend(loc='upper right', fontsize=legendsize-15)
+        ax1.legend(handles, labels, loc='upper right', fontsize=labelsize - 15)
     else:
-        plt.legend(loc='lower left', fontsize=legendsize-15)
+        ax1.legend(handles, labels, loc='lower left', fontsize=labelsize - 15)
         ax1.set_xlabel('$days$', fontsize=labelsize-5)
     ax1.set_ylabel('$I(t)$', fontsize=labelsize-5)
     plt.axvline(x=x_postlock[0], color='black', linestyle='--')
@@ -185,14 +185,14 @@ for i, area in enumerate(areas):
     ax2.plot(x_recovered_prelock, recovered_mean, label='Recovered - Predicted', color=blue)
     plt.axvline(x=x_postlock[0], color='black', linestyle='--')
 
-    ax2.legend(loc='best', fontsize=legendsize-15)
+    ax2.legend(handles, labels, loc='best', fontsize=legendsize-15)
     ax2.set_xlabel('$days$', fontsize=labelsize-5)
     ax2.set_ylabel('$R(t)$', fontsize=labelsize-5)
 
     handles, labels = ax2.get_legend_handles_labels()
 
     handles = [handles[0], handles[3], handles[1], handles[2]]
-    labels = [labels[0], labels[1], labels[2], handles[3]]
+    labels = [labels[0], labels[3], labels[1], labels[2]]
     plt.gcf().subplots_adjust(left=0.35, bottom=0.25)
     plt.savefig('sensitivity_{}_r'.format(area))
 
